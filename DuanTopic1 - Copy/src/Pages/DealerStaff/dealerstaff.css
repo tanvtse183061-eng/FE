@@ -1,0 +1,365 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  margin: 0;
+}
+
+/* --- Sidebar chính --- */
+.sidebar-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100%;
+  background-color: #fff;
+  border-right: 1px solid #dcdcdc;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+  transition: width 0.3s ease;
+  z-index: 10;
+}
+
+/* --- Khi thu nhỏ --- */
+.sidebar-card.collapsed {
+  width: 90px;
+}
+
+/* --- Phần thông tin user --- */
+.profile-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80px;
+  border-bottom: 1px solid #eee;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-icon {
+  background-color: rgb(62, 163, 163);
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon{
+  font-size: 30px;
+  margin-top: -3px;
+}
+
+.profile-info button {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background-color: #f1f5f9;
+  cursor: pointer;
+}
+
+.profile-info .role {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* --- Menu chức năng --- */
+.menu {
+  padding: 10px 15px;
+}
+
+.menu-title {
+  font-size: 13px;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu ul li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #374151;
+  transition: all 0.3s ease;
+}
+
+.menu ul li:hover {
+  background-color: rgba(240, 248, 255, 0.6);
+  transform: translateX(3px);
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* --- Icon màu riêng --- */
+.menu ul li.truy svg {
+  color: #2563eb;
+}
+
+.menu ul li.quan svg {
+  color: #f59e0b;
+}
+
+.menu ul li.hang svg {
+  color: #10b981;
+}
+
+.menu ul li.bao svg {
+  color: #ef4444;
+}
+
+/* --- Hover có ánh sáng --- */
+.menu ul li.truy:hover svg {
+  filter: drop-shadow(0 0 6px #3b82f6);
+}
+
+.menu ul li.quan:hover svg {
+  filter: drop-shadow(0 0 6px #fbbf24);
+}
+
+.menu ul li.hang:hover svg {
+  filter: drop-shadow(0 0 6px #34d399);
+}
+
+.menu ul li.bao:hover svg {
+  filter: drop-shadow(0 0 6px #f87171);
+}
+
+/* --- Ẩn chữ khi thu nhỏ --- */
+.sidebar-card.collapsed .menu-title,
+.sidebar-card.collapsed .menu ul li span,
+.sidebar-card.collapsed .role,
+.sidebar-card.collapsed button {
+  display: none;
+}
+
+.sidebar-card.collapsed .menu ul li {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar-card.collapsed .menu ul li svg {
+  font-size: 20px;
+}
+
+/* --- Header --- */
+.header {
+  position: fixed;
+  top: 0;
+  left: 280px;
+  height: 80px;
+  width: calc(100% - 280px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff;
+  border-bottom: 1px solid #dcdcdc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 0 25px;
+  transition: all 0.3s ease;
+  z-index: 9;
+}
+
+/* --- Khi sidebar thu nhỏ --- */
+.sidebar-card.collapsed~.header {
+  left: 90px;
+  width: calc(100% - 90px);
+}
+
+/* --- Nút toggle --- */
+.menu-toggle {
+  font-size: 22px;
+  cursor: pointer;
+  color: #374151;
+}
+
+.menu-toggle:hover {
+  color: #2563eb;
+  transform: scale(1.1);
+}
+
+/* --- Search bar --- */
+.search {
+  flex: 1;
+  max-width: 700px;
+  margin-left: 40px;
+}
+
+.header-icons {
+  display: flex;
+  gap: 20px;
+  font-size: 18px;
+}
+
+.staff-name h2 {
+  font-size: 15px;
+  margin: 0;
+}
+.header-icons button{
+  background: none;
+    /* bỏ màu nền */
+    border: none;
+    /* bỏ viền */
+    cursor: pointer;
+    /* hiển thị con trỏ tay */
+    padding: 5px;
+}
+.iconn {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+}
+
+/* khung icon */
+.icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* icon chính */
+.icon-wrapper .icon-k,
+.icon-wrapper .icon-t {
+  font-size: 2px;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* chấm đỏ */
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  background: red;
+  color: white;
+  font-size: 2px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  /* viền trắng cho đẹp */
+  min-width: 16px;
+  text-align: center;
+  line-height: 1;
+}
+/* --- Dropdown thông báo --- */
+.notification-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 340px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+  padding: 0;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-in-out;
+  overflow: hidden;
+}
+
+/* --- Tiêu đề Notifications --- */
+.notification-dropdown h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  margin: 0;
+}
+
+/* --- Danh sách thông báo --- */
+.notification-dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* --- Mỗi dòng thông báo --- */
+.notification-dropdown ul li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  transition: background 0.2s ease;
+}
+
+.notification-dropdown ul li:hover {
+  background: #f9fafb;
+}
+
+/* --- Đường gạch phân cách giữa các thông báo --- */
+.notification-dropdown ul li:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* --- Avatar --- */
+.notification-dropdown ul li img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* --- Nội dung --- */
+.notification-dropdown ul li div {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #111827;
+}
+
+.notification-dropdown ul li strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.notification-dropdown ul li span {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* --- View All --- */
+.notification-dropdown .view-all {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2563eb;
+  padding: 10px 0;
+  border-top: 1px solid #e5e7eb;
+  cursor: pointer;
+}
+
+.notification-dropdown .view-all:hover {
+  text-decoration: underline;
+}
+
+/* --- Hiệu ứng mở dropdown --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

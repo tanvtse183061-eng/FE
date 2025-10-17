@@ -1,0 +1,132 @@
+import './dealerstaff.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserTie, faCar, faChartBar, faUsers, faFileAlt, faSearch, faBell, faEnvelope, faBars } from '@fortawesome/free-solid-svg-icons';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { InputGroup, FormControl } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
+
+export default function Dealerstaff() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+const [showNotifications, setShowNotifications] = useState(false);
+
+ const toggleNotifications = () => {
+  setShowNotifications(!showNotifications);
+};
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const [username, setUsername] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("username");
+    if (savedUser) {
+      setUsername(savedUser);
+    } else {
+      navigate("/login");
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("role");
+    navigate("/login");
+  };
+
+  return (
+    <>
+      <div className={`sidebar-card ${isCollapsed ? "collapsed" : ""}`}>
+        <div className="profile-section">
+          <div className="profile-info">
+            <div className="profile-icon">
+              <FontAwesomeIcon icon={faUserTie} color="white" className="icon" />
+            </div>
+            {!isCollapsed && (
+              <>
+                <p className="role">Dealer Staff</p>
+                <button onClick={handleLogout}>Logout</button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="menu">
+          {!isCollapsed && <p className="menu-title">Chức năng</p>}
+          <ul>
+            <li className='truy'><FontAwesomeIcon icon={faCar} /><span>Truy vấn thông tin xe</span></li>
+            <li className='quan'><FontAwesomeIcon icon={faFileAlt} /><span>Quản lý bán hàng</span></li>
+            <li className='hang'><FontAwesomeIcon icon={faUsers} /><span>Quản lý khách hàng</span></li>
+            <li className='bao'><FontAwesomeIcon icon={faChartBar} /><span>Báo cáo</span></li>
+
+          </ul>
+        </div>
+      </div>
+
+      <div className="header">
+        <div className="menu-toggle" onClick={toggleSidebar}>
+          <FontAwesomeIcon icon={faBars} />
+        </div>
+        <div className="search">
+          <InputGroup className="search-bar">
+            <InputGroup.Text>
+              <FontAwesomeIcon icon={faSearch} color="green" />
+            </InputGroup.Text>
+            <FormControl placeholder="Search " />
+          </InputGroup>
+        </div>
+        <div className="header-icons">
+             <div className="icon-wrapper">
+               <button onClick={toggleNotifications}>
+    <FontAwesomeIcon icon={faBell} />
+  </button>
+  <span className="badge">3</span>
+
+  {showNotifications && (
+    <div className="notification-dropdown">
+      <div className="dropdown-header">
+        <FontAwesomeIcon icon={faBell} /> Notifications
+      </div>
+      <div className="dropdown-item">
+        <img src="https://i.pravatar.cc/30?img=1" alt="user" />
+        <div>
+          <p><strong>John Doe</strong> liked your post</p>
+          <span>5 mins ago</span>
+        </div>
+      </div>
+      <div className="dropdown-item">
+        <img src="https://i.pravatar.cc/30?img=2" alt="user" />
+        <div>
+          <p><strong>Moo Doe</strong> liked your cover image</p>
+          <span>7 mins ago</span>
+        </div>
+      </div>
+      <div className="dropdown-item">
+        <img src="https://i.pravatar.cc/30?img=3" alt="user" />
+        <div>
+          <p><strong>Lee Doe</strong> commented on your video</p>
+          <span>10 mins ago</span>
+        </div>
+      </div>
+      <div className="dropdown-footer">
+        <a href="#">View All Notifications</a>
+      </div>
+    </div>
+  )}</div>
+           <div className="icon-wrapper"><button>
+            <FontAwesomeIcon icon={faEnvelope} />
+            </button>
+              <span className="badge">3</span>
+            </div>
+          
+          
+        </div>
+        <div className="staff-name">
+          <h2>{username}</h2>
+        </div>
+      </div>
+    </>
+  );
+}
