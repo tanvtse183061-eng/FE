@@ -34,7 +34,7 @@ export default function Login(){
     event.preventDefault();
     if (validateForm()){
         try{
-            const response = await API.post("/auth/login", {
+            const response = await API.post("/api/auth/login", {
                 username: formValue.username,
                 password: formValue.password
             });
