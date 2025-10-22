@@ -1,12 +1,13 @@
 import './dealerstaff.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserTie, faCar, faChartBar, faUsers, faFileAlt, faSearch, faBell, faEnvelope, faBars } from '@fortawesome/free-solid-svg-icons';
+import { faUserTie, faCar, faMoneyCheckDollar ,faTruck, faUsers, faFileAlt, faSearch, faBell, faEnvelope, faBars,faGrip,faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { InputGroup, FormControl } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { Outlet,useNavigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 
 export default function Dealerstaff() {
+ 
   const [isCollapsed, setIsCollapsed] = useState(false);
 const [showNotifications, setShowNotifications] = useState(false);
 
@@ -56,11 +57,15 @@ const [showNotifications, setShowNotifications] = useState(false);
         <div className="menu">
           {!isCollapsed && <p className="menu-title">Chức năng</p>}
           <ul>
-            <li className='truy'><FontAwesomeIcon icon={faCar} /><span>Truy vấn thông tin xe</span></li>
-            <li className='quan'><FontAwesomeIcon icon={faFileAlt} /><span>Quản lý bán hàng</span></li>
-            <li className='hang'><FontAwesomeIcon icon={faUsers} /><span>Quản lý khách hàng</span></li>
-            <li className='bao'><FontAwesomeIcon icon={faChartBar} /><span>Báo cáo</span></li>
-
+           <li onClick={() => navigate("dashboard")} className='tong'><FontAwesomeIcon icon={faGrip} /><span>Tổng quan</span></li> 
+          <li className='truy'><FontAwesomeIcon icon={faCar} /><span>Truy vấn thông tin xe</span></li>
+           <li className='quan'><FontAwesomeIcon icon={faFileAlt} /><span>Báo giá</span></li>
+           <li className='hang'><FontAwesomeIcon icon={faUsers} /><span>Khách hàng</span></li>
+            <li className='don'><FontAwesomeIcon icon={faShoppingCart} /><span>Đơn hàng</span></li>
+           <li className='bao'><FontAwesomeIcon icon={faFileAlt} /><span>Hợp Đồng</span></li>
+           <li className ='xe'><FontAwesomeIcon icon={faTruck} /><span>Giao xe</span></li>
+           <li className='thanh'><FontAwesomeIcon icon={faMoneyCheckDollar} /><span>Thanh Toán</span></li>
+         
           </ul>
         </div>
       </div>
@@ -126,7 +131,11 @@ const [showNotifications, setShowNotifications] = useState(false);
         <div className="staff-name">
           <h2>{username}</h2>
         </div>
+        
       </div>
+         <div className="content-area">
+                  <Outlet />
+                           </div>      
     </>
   );
 }

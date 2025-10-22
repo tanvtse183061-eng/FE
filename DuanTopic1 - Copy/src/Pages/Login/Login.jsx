@@ -50,7 +50,15 @@ export default function Login(){
 
         } catch (error){
             console.error("Login error:", error);
-            alert("Login failed. Please check your credentials.");
+            if (error.response) {
+                console.error("Server responded with:", error.response.status, error.response.data);
+                alert(`Login failed: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+            } else if (error.request) {
+                console.error("No response received, request was:", error.request);
+                alert("Login failed: No response from server. Is the backend running?");
+            } else {
+                alert(`Login failed: ${error.message}`);
+            }
         }
     } else {
         console.log("errors:",formError);

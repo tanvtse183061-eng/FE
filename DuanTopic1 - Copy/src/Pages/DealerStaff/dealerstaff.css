@@ -19,6 +19,20 @@ body {
   transition: width 0.3s ease;
   z-index: 10;
 }
+.header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: white;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 
 /* --- Khi thu nhỏ --- */
 .sidebar-card.collapsed {
@@ -59,7 +73,7 @@ body {
   padding: 4px 10px;
   border-radius: 8px;
   border: 1px solid #ddd;
-  background-color: #f1f5f9;
+  background-color: #f8f7f7;
   cursor: pointer;
 }
 
@@ -105,6 +119,24 @@ body {
 }
 
 /* --- Icon màu riêng --- */
+.menu button {
+  background: none;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.menu button:hover {
+  box-shadow: none;
+  background: transparent;
+}
+.tong ul  li svg {
+  color: #000000;
+}
+
 .menu ul li.truy svg {
   color: #2563eb;
 }
@@ -116,16 +148,26 @@ body {
 .menu ul li.hang svg {
   color: #10b981;
 }
+.menu ul li.don svg {
+  color: #8b5cf6;
+}
 
 .menu ul li.bao svg {
   color: #ef4444;
 }
-
+.menu ul li.thanh svg {
+  color: #22c55e;
+}
 /* --- Hover có ánh sáng --- */
+.tong ul li:hover svg {
+  filter: drop-shadow(0 0 6px #151616);
+}
 .menu ul li.truy:hover svg {
   filter: drop-shadow(0 0 6px #3b82f6);
 }
-
+.menu ul li.thanh:hover svg {
+  filter: drop-shadow(0 0 6px #22c55e);
+}
 .menu ul li.quan:hover svg {
   filter: drop-shadow(0 0 6px #fbbf24);
 }
@@ -133,7 +175,9 @@ body {
 .menu ul li.hang:hover svg {
   filter: drop-shadow(0 0 6px #34d399);
 }
-
+.menu ul li.don:hover svg {
+  filter: drop-shadow(0 0 6px #a78bfa);
+}
 .menu ul li.bao:hover svg {
   filter: drop-shadow(0 0 6px #f87171);
 }
@@ -362,4 +406,17 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+.content-area {
+    margin-left: 260px;
+      /* để tránh sidebar */
+      padding: 20px;
+      padding-top: 90px;
+      /* để tránh header */
+      min-height: 100vh;
+      
+}
+.sidebar-card.collapsed~.content-area {
+  margin-left: 90px;
+  transition: all 0.3s ease;
 }

@@ -5,6 +5,7 @@ import Login from './Pages/Login/Login';
 import MainLayout from './layouts/MainLayout';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dealerstaff from './Pages/DealerStaff/Dealerstaff';
+import Dashboard from './Pages/DealerStaff/Dashboard';
 
 function App() {
   return (
@@ -26,12 +27,15 @@ function App() {
           } />
           <Route path='/dealerstaff' element={
              <Dealerstaff />
-          }></Route>
+          }>
+            <Route path='dashboard' element={<Dashboard />}/>
+          </Route>
+          
         </Routes>
         
       </BrowserRouter>
     </div>
   )
 }
-//helo123
+
 export default App
