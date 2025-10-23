@@ -2,3 +2,70 @@
     position: relative;
     padding: 20px;
 }
+.dashboard-list {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.dash {
+    background: #fff;
+    border-radius: 16px;
+    width: 240px;
+    height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+}
+
+.dash:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Ô chứa icon */
+.icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+/* Số chính */
+.number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* Tiêu đề */
+.title {
+    font-size: 15px;
+    color: #4b5563;
+    margin-top: 2px;
+}
+
+/* Giá trị tăng giảm */
+.value {
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.value.positive {
+    color: #16a34a;
+}
+
+.value.negative {
+    color: #dc2626;
+}
