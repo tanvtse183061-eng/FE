@@ -92,7 +92,7 @@ useEffect(()=>{
          const recent = res.data
           .sort((a, b) => b.id - a.id)
           .slice(0, 2);
-        setRencentOrder(recent);
+        setRencentCustomer(recent);
       }
     }catch(err){
            console.error("Lỗi khách hàng:", err);
@@ -190,18 +190,33 @@ useEffect(()=>{
            </div>
                    <div className='hoatdong'>
                      <h3>Hoạt động gần đây</h3>
-                             {rencentOrder.length > 0 ? (
-    <ul className='gan'>
-      {rencentOrder.map(o => (
-        <li style={{listStyle:'none',position:'relative',left:'-30px'}} key={o.orderId}>Đơn #{o.orderId} -  {o.status}</li>
-      ))}
-               </ul>
-                ) : (
-                    <p>Không có đơn hàng gần đây</p>
+                     
+                     <h4 style={{marginTop: '20px', fontSize: '16px', color: '#666'}}>Đơn hàng mới</h4>
+                     {rencentOrder.length > 0 ? (
+                       <ul className='gan'>
+                         {rencentOrder.map(o => (
+                           <li style={{listStyle:'none',position:'relative',left:'-30px'}} key={o.orderId}>
+                             Đơn #{o.orderId} - {o.status}
+                           </li>
+                         ))}
+                       </ul>
+                     ) : (
+                       <p>Không có đơn hàng gần đây</p>
                      )}
-       
-                   
-</div> 
+
+                     <h4 style={{marginTop: '20px', fontSize: '16px', color: '#666'}}>Khách hàng mới</h4>
+                     {rencentCustomer.length > 0 ? (
+                       <ul className='gan'>
+                         {rencentCustomer.map(c => (
+                           <li style={{listStyle:'none',position:'relative',left:'-30px'}} key={c.id}>
+                             {c.fullName} - {c.phoneNumber}
+                           </li>
+                         ))}
+                       </ul>
+                     ) : (
+                       <p>Không có khách hàng mới</p>
+                     )}
+                   </div> 
        </div>
     
     </>
