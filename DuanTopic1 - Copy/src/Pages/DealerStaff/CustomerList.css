@@ -1,5 +1,5 @@
 .customer-list-container {
-  padding: 20px 30px 30px 30px;
+  padding: 280px 30px 30px 30px;
   background: #f8f9fa;
   min-height: 100vh;
 }
@@ -393,4 +393,25 @@
   .btn-submit {
     width: 100%;
   }
+}
+
+.results-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+.customer-title {
+  flex: 1;
+  text-align: center;
+  font-size: 1.6rem;
+  color: #2c3e50;
+  margin: 0 20px 0 20px;
+  font-weight: 700;
+}
+
+.sidebar-card.collapsed ~ .customer-list-container {
+  padding-left: 120px;
 }
