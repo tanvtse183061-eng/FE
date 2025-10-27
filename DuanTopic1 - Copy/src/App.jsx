@@ -6,6 +6,7 @@ import MainLayout from './layouts/MainLayout';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dealerstaff from './Pages/DealerStaff/Dealerstaff';
 import Dashboard from './Pages/DealerStaff/Dashboard';
+import Customer from './Pages/DealerStaff/Customer';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
              <Dealerstaff />
           }>
             <Route path='dashboard' element={<Dashboard />}/>
+            <Route path='customer' element={<Customer />} />
           </Route>
           
         </Routes>
