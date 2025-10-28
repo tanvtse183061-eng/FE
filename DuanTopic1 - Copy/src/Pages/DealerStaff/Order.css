@@ -4,24 +4,26 @@ body {
     /* chỉ cho phép 1 thanh cuộn toàn trang */
     height: 100%;
 }
+
 main {
     overflow-y: auto;
     height: 100vh;
 }
+
 .customer {
     margin-top: 500px;
     padding: 30px;
-        background-color: #f8fafc;
-        min-height: 100vh;
-        font-family: "Segoe UI", sans-serif;
-        border-radius: 12px;
-        position: relative;
-        top: 0;
-        left: 0;
-        width: 100%;
-        overflow-y: visible;
-        height: auto;
-    
+    background-color: #f8fafc;
+    min-height: 100vh;
+    font-family: "Segoe UI", sans-serif;
+    border-radius: 12px;
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow-y: visible;
+    height: auto;
+
 }
 
 /* --- Tiêu đề chính --- */
@@ -109,7 +111,7 @@ main {
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     overflow-x: auto;
-    
+
 }
 
 .customer-table {
@@ -185,6 +187,7 @@ main {
         width: 100%;
     }
 }
+
 .popup-overlay {
     position: fixed;
     top: 0;
@@ -220,6 +223,7 @@ main {
 .btn-close:hover {
     background: #dc2626;
 }
+
 .btn-view {
     background-color: #3498db;
     color: white;
@@ -233,6 +237,7 @@ main {
 .btn-view:hover {
     background-color: #2980b9;
 }
+
 .action-buttons {
     display: flex;
     gap: 8px;

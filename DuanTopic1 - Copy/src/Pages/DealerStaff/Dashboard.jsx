@@ -285,7 +285,7 @@ export default function Dashboard() {
                   style={{ listStyle: 'none', position: 'relative', left: '-30px' }}
                   key={o.orderId}
                 >
-                  Đơn #{o.orderId} - {o.status}
+                  Đơn #{o.orderNumber} - {o.status}
                 </li>
               ))}
             </ul>

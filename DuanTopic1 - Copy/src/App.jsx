@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dealerstaff from './Pages/DealerStaff/Dealerstaff';
 import Dashboard from './Pages/DealerStaff/Dashboard';
 import Customer from './Pages/DealerStaff/Customer';
+import Order from './Pages/DealerStaff/Order';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           }>
             <Route path='dashboard' element={<Dashboard />}/>
             <Route path='customer' element={<Customer />} />
+            <Route path='order' element = {<Order />} />
           </Route>
           
         </Routes>

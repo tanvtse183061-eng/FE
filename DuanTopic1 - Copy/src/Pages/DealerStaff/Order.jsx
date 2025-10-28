@@ -1,36 +1,37 @@
-import './Customer.css'
+
+ import './Order.css'
 import { FaSearch, FaEye, FaPen, FaTrash } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import API from '../Login/API';
-
-export default function Customer() {
-  const [customers, setCustomers] = useState([]);
+export default function Order(){
+   
+  const [order, setOrder] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   //  Lấy danh sách khách hàng ban đầu
-  const fetchCustomers = async () => {
+  const fetchOrder = async () => {
     try {
-      const res = await API.get("/api/customers");
-      setCustomers(res.data);
+      const res = await API.get("/api/orders");
+      setOrder(res.data);
     } catch (err) {
       console.error("Lỗi khi lấy khách hàng:", err);
     }
   };
 
   useEffect(() => {
-    fetchCustomers();
+    fetchOrder();
   }, []);
 
   //  Xoá khách hàng
-  const handleDelete = async (customerId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa khách hàng này không?")) return;
+  const handleDelete = async (orderId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa đơn hàng  này không?")) return;
     try {
-      await API.delete(`/api/customers/${customerId}`);
+      await API.delete(`/api/orders/${orderId}`);
       alert("Xóa khách hàng thành công!");
-      fetchCustomers();
+      fetchOrder();
     } catch (err) {
       console.error("Lỗi khi xóa khách hàng:", err);
       alert("Xóa thất bại!");
@@ -38,44 +39,36 @@ export default function Customer() {
   };
 
   //  Tìm kiếm theo tên (real-time)
-  useEffect(() => {
-    const delayDebounce = setTimeout(async () => {
-      const trimmed = searchTerm.trim();
-      if (trimmed === "") {
-        fetchCustomers();
-        return;
-      }
-      try {
-        const res = await API.get(`/api/customers/search?name=${encodeURIComponent(trimmed)}`);
-        setCustomers(res.data);
-      } catch (err) {
-        console.error("Lỗi khi tìm khách hàng:", err);
-      }
-    }, 400);
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchTerm]);
+const filteredOrders = order.filter((o) => {
+  const keyword = searchTerm.toLowerCase();
+  return (
+    o.orderNumber.toLowerCase().includes(keyword) ||
+    o.quotation.customer.firstName.toLowerCase().includes(keyword) ||
+    o.quotation.customer.lastName.toLowerCase().includes(keyword) ||
+    o.status.toLowerCase().includes(keyword)
+  );
+});
 
   //  Xử lý khi nhấn nút “Xem”
-  const handleView = (customer) => {
-    setSelectedCustomer(customer);
+  const handleView = (order) => {
+    setSelectedOrder(order);
     setShowDetail(true);
   };
 
   return (
     <div className="customer">
-      <div className="title-customer">Quản lý khách hàng</div>
+      <div className="title-customer">Quản lý đơn hàng</div>
 
       <div className="title2-customer">
-        <h2>Danh sách khách hàng</h2>
-        <h3 onClick={() => setShowPopup(true)}>+ Thêm khách hàng</h3>
+        <h2>Danh sách đơn hàng</h2>
+        <h3 onClick={() => setShowPopup(true)}>+ Thêm đơn hàng</h3>
       </div>
 
       <div className="title3-customer">
         <FaSearch className="search-icon" />
         <input
           type="text"
-          placeholder="Tìm kiếm khách hàng..."
+          placeholder="Tìm kiếm đơn hàng..."
           className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -86,25 +79,27 @@ export default function Customer() {
         <table className="customer-table">
           <thead>
             <tr>
-              <th>HỌ TÊN</th>
-              <th>EMAIL</th>
-              <th>SỐ ĐIỆN THOẠI</th>
-              <th>THÀNH PHỐ</th>
-              <th>ĐIỂM TÍN DỤNG</th>
-              <th>NGÀY TẠO</th>
+              <th>SỐ ĐƠN HÀNG</th>
+              <th>KHÁCH HÀNG</th>
+              <th>XE ĐẶT MUA</th>
+              <th>TỔNG TIỀN</th>
+              <th>TRẠNG THÁI</th>
+              <th>NGÀY ĐẶT HÀNG</th>
               <th>THAO TÁC</th>
             </tr>
           </thead>
           <tbody>
-            {customers.length > 0 ? (
-              customers.map((c) => (
-                <tr key={c.customerId}>
-                  <td>{c.firstName} {c.lastName}</td>
-                  <td>{c.email}</td>
-                  <td>{c.phone}</td>
-                  <td>{c.city}</td>
-                  <td>{c.creditScore}</td>
-                  <td>{c.createdAt}</td>
+            {filteredOrders.length > 0 ? (
+              filteredOrders.map((c) => (
+                <tr key={c.orderId}>
+                  <td>{c.orderNumber}</td>
+                  <td>{c.quotation.customer.firstName} {c.quotation.customer.lastName}</td>
+                  <td>{c.quotation.variant.model.brand.brandName}{""}
+                      {c.quotation.variant.model.modelName}
+                  </td>
+                  <td>{c.quotation.finalPrice.toLocaleString()} ₫</td>
+                  <td>{c.status}</td>
+                  <td>{new Date(c.orderDate).toLocaleDateString("vi-VN")}</td>
                   <td className="action-buttons">
                     <button className="icon-btn view" onClick={() => handleView(c)}>
                       <FaEye />
@@ -113,7 +108,7 @@ export default function Customer() {
                       <FaPen />
                     </button>
                     
-                    <button className="icon-btn delete" onClick={() => handleDelete(c.customerId)}>
+                    <button className="icon-btn delete" onClick={() => handleDelete(c.orderId)}>
                       <FaTrash />
                     </button>
                   </td>
@@ -144,16 +139,16 @@ export default function Customer() {
       )}
 
       {/* Popup xem chi tiết khách hàng */}
-      {showDetail && selectedCustomer && (
+      {showDetail && selectedOrder && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h2>Thông tin khách hàng</h2>
-            <p><b>Họ tên:</b> {selectedCustomer.firstName} {selectedCustomer.lastName}</p>
-            <p><b>Email:</b> {selectedCustomer.email}</p>
-            <p><b>Số điện thoại:</b> {selectedCustomer.phone}</p>
-            <p><b>Thành phố:</b> {selectedCustomer.city}</p>
-            <p><b>Điểm tín dụng:</b> {selectedCustomer.creditScore}</p>
-            <p><b>Ngày tạo:</b> {selectedCustomer.createdAt}</p>
+            <h2>Thông tin đặt hàng</h2>
+            <p><b>Số đơn hàng:</b> {selectedOrder.orderNumber} </p>
+            <p><b>Khách hàng:</b>{selectedOrder.quotation.customer.firstName} {selectedOrder.quotation.customer.lastName} </p>
+            <p><b>Xe đặt mua:</b> {selectedOrder.quotation.variant.model.brand.brandName}{" "} {selectedOrder.quotation.variant.model.modelName}</p>
+            <p><b>Tổng tiền:</b>{selectedOrder.quotation.finalPrice.toLocaleString()} ₫ </p>
+            <p><b>Trạng thái:</b> {selectedOrder.status}</p>
+            <p><b>Ngày đặt hàng:</b> {new Date(selectedOrder.orderDate).toLocaleDateString("vi-VN")}</p>
             <button className="btn-close" onClick={() => setShowDetail(false)}>Đóng</button>
           </div>
         </div>
