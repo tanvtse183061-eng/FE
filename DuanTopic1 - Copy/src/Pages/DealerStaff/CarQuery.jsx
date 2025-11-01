@@ -151,33 +151,121 @@ export default function CarQuery() {
       {compareResult && compareResult.length > 0 && (
         <div className="compare-result">
           <button className="close-compare-btn" onClick={closeCompare}>✖ Đóng</button>
-          <h3>🔍 Kết quả so sánh</h3>
+          <h3>🔍 Kết quả so sánh chi tiết</h3>
           <table className="compare-table">
             <thead>
               <tr>
-                <th>Tên xe</th>
-                <th>Hãng</th>
-                <th>Loại xe</th>
-                <th>Năm</th>
-                <th>Giá</th>
-                <th>Quốc gia</th>
+                <th>Thông số</th>
+                {compareResult.map((car, index) => (
+                  <th key={car.modelId || index}>
+                    <strong>{car.modelName || 'N/A'}</strong>
+                    <br />
+                    <small style={{ fontWeight: 'normal', fontSize: '12px' }}>
+                      {(car.brand?.brandName || 'N/A')} - {car.modelYear || 'N/A'}
+                    </small>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(compareResult) && compareResult.map((car, index) => {
-                if (!car) return null;
-                const brandInfo = car.brand || {};
-                return (
-                  <tr key={car.modelId || car.brandId || car.id || index}>
-                    <td><strong>{car.modelName || car.name || 'N/A'}</strong></td>
-                    <td>{brandInfo.brandName || car.brandName || 'N/A'}</td>
-                    <td>{car.vehicleType || 'N/A'}</td>
-                    <td>{car.modelYear || car.year || 'N/A'}</td>
-                    <td><strong>{car.price ? car.price.toLocaleString('vi-VN') + ' ₫' : 'Liên hệ'}</strong></td>
-                    <td>{brandInfo.country || car.country || 'N/A'}</td>
-                  </tr>
-                );
-              })}
+              <tr>
+                <td><strong>🏢 Hãng xe</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.brand?.brandName || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>🚗 Loại xe</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.vehicleType || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>📅 Năm sản xuất</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.modelYear || car.year || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>🌍 Quốc gia</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.brand?.country || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr style={{ background: '#f0f8ff' }}>
+                <td><strong>💰 Giá bán</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>
+                    <strong style={{ color: '#27ae60', fontSize: '16px' }}>
+                      {car.price ? car.price.toLocaleString('vi-VN') + ' ₫' : 'Liên hệ'}
+                    </strong>
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>⚡ Công suất (HP)</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.horsepower || car.power || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>🔋 Dung lượng pin (kWh)</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.batteryCapacity || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>🛣️ Tầm hoạt động (km)</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.range || car.maxRange || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>⏱️ Tăng tốc 0-100km/h (s)</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.acceleration || car.zeroToHundred || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>🏎️ Tốc độ tối đa (km/h)</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.topSpeed || car.maxSpeed || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>🔌 Thời gian sạc (phút)</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.chargingTime || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>💺 Số chỗ ngồi</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.seats || car.seatingCapacity || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>📏 Kích thước (DxRxC mm)</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>
+                    {car.dimensions || 
+                     (car.length && car.width && car.height ? 
+                      `${car.length} x ${car.width} x ${car.height}` : 'N/A')}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>🎨 Màu sắc</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.colors || car.availableColors || 'N/A'}</td>
+                ))}
+              </tr>
+              <tr>
+                <td><strong>✨ Tính năng nổi bật</strong></td>
+                {compareResult.map((car, index) => (
+                  <td key={index}>{car.features || car.description || 'N/A'}</td>
+                ))}
+              </tr>
             </tbody>
           </table>
         </div>
