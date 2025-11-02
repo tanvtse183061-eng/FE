@@ -125,11 +125,11 @@ const filteredOrders = order.filter((o) => {
         </table>
       </div>
 
-      {/* Popup thêm khách hàng */}
+      {/* Popup thêm đơn hàng */}
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h2>Thêm khách hàng mới</h2>
+            <h2>Thêm đơn hàng mới</h2>
             <p>(Chưa có form, chỉ là popup mẫu)</p>
             <button className="btn-close" onClick={() => setShowPopup(false)}>
               Đóng
@@ -138,7 +138,7 @@ const filteredOrders = order.filter((o) => {
         </div>
       )}
 
-      {/* Popup xem chi tiết khách hàng */}
+      {/* Popup xem chi tiết đặt hàng */}
       {showDetail && selectedOrder && (
         <div className="popup-overlay">
           <div className="popup-box">

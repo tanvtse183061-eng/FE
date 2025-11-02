@@ -62,9 +62,9 @@ const [showNotifications, setShowNotifications] = useState(false);
            <li className='quan'><FontAwesomeIcon icon={faFileAlt} /><span>Báo giá</span></li>
            <li onClick={()=> navigate("customer")} className='hang'><FontAwesomeIcon icon={faUsers} /><span>Khách hàng</span></li>
             <li onClick={()=> navigate("order")}  className='don'><FontAwesomeIcon icon={faShoppingCart} /><span>Đơn hàng</span></li>
-           <li className='bao'><FontAwesomeIcon icon={faFileAlt} /><span>Hợp Đồng</span></li>
-           <li className ='xe'><FontAwesomeIcon icon={faTruck} /><span>Giao xe</span></li>
-           <li className='thanh'><FontAwesomeIcon icon={faMoneyCheckDollar} /><span>Thanh Toán</span></li>
+           <li   className='bao'><FontAwesomeIcon icon={faFileAlt} /><span>Hợp Đồng</span></li>
+           <li onClick={()=> navigate("cardelivery")} className ='xe'><FontAwesomeIcon icon={faTruck} /><span>Giao xe</span></li>
+           <li onClick={()=> navigate("paymentcustomer")}   className='thanh'><FontAwesomeIcon icon={faMoneyCheckDollar} /><span>Thanh Toán</span></li>
          
           </ul>
         </div>

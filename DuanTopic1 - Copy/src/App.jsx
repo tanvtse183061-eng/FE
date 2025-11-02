@@ -8,6 +8,8 @@ import Dealerstaff from './Pages/DealerStaff/Dealerstaff';
 import Dashboard from './Pages/DealerStaff/Dashboard';
 import Customer from './Pages/DealerStaff/Customer';
 import Order from './Pages/DealerStaff/Order';
+import Cardelivery from './Pages/DealerStaff/Cardelivery';
+import Paymentcustomer from './Pages/DealerStaff/Paymentcustomer';
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
             <Route path='dashboard' element={<Dashboard />}/>
             <Route path='customer' element={<Customer />} />
             <Route path='order' element = {<Order />} />
+            <Route path='cardelivery' element={<Cardelivery />} />
+            <Route path='paymentcustomer' element={<Paymentcustomer />} />
           </Route>
           
         </Routes>
