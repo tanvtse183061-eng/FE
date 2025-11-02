@@ -85,14 +85,14 @@ const [showNotifications, setShowNotifications] = useState(false);
         <div className="header-icons">
              <div className="icon-wrapper">
                <button onClick={toggleNotifications}>
-    <FontAwesomeIcon icon={faBell} />
+    <FontAwesomeIcon icon={faBell} color='black' />
   </button>
   <span className="badge">3</span>
 
   {showNotifications && (
     <div className="notification-dropdown">
       <div className="dropdown-header">
-        <FontAwesomeIcon icon={faBell} /> Notifications
+        <FontAwesomeIcon icon={faBell}  /> Notifications
       </div>
       <div className="dropdown-item">
         <img src="https://i.pravatar.cc/30?img=1" alt="user" />
@@ -121,7 +121,7 @@ const [showNotifications, setShowNotifications] = useState(false);
     </div>
   )}</div>
            <div className="icon-wrapper"><button>
-            <FontAwesomeIcon icon={faEnvelope} />
+            <FontAwesomeIcon icon={faEnvelope} color='black' />
             </button>
               <span className="badge">3</span>
             </div>
