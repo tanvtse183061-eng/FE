@@ -6,15 +6,11 @@ import './Navbar.css';
 export default function Navbar() {
   return (
     <header className="nav-container">
-     
       <div className="logo">EVM CAR</div>
 
       <nav className="navbar">
         <ul>
           <li><Link to="/home">TRANG CHỦ</Link></li>
-          <li><a href="#">DỊCH VỤ</a></li>
-          <li><a href="#">SẢN PHẨM</a></li>
-          <li><a href="#">KHUYẾN MÃI</a></li>
         </ul>
       </nav>
 

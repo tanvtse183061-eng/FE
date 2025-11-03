@@ -6,6 +6,7 @@ import vf3_vang from '../../assets/cars/vf3_vang.png';
 import vf7_xam from '../../assets/cars/vf7_xam.png';
 import Macanxanh from '../../assets/cars/Macanxanh.png';
 import Macantim4 from '../../assets/cars/Macantim4.png';
+import { Link} from "react-router-dom";
 import './CarSection.css';
 
 export default function CarSection() {
@@ -17,7 +18,7 @@ export default function CarSection() {
             
             <div className='car-body'> 
                 <div className='herio'>
-                    <img src={anhnenherio} alt="Herio Green" />  
+                  <Link to='/heriogreen'><img src={anhnenherio} alt="Herio Green" /></Link>  
                     <p className='name-car'>Herio Green</p>
                     <p className='price-car'>GIÁ TỪ 499,000,000 ₫</p>
                 </div>

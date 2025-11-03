@@ -7,10 +7,10 @@ import { Outlet,useNavigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 
 export default function Dealerstaff() {
- 
+ const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
 const [showNotifications, setShowNotifications] = useState(false);
-
+const [selectedAction, setSelectedAction] = useState(null);
  const toggleNotifications = () => {
   setShowNotifications(!showNotifications);
 };
@@ -19,7 +19,7 @@ const [showNotifications, setShowNotifications] = useState(false);
   };
 
   const [username, setUsername] = useState("");
-  const navigate = useNavigate();
+  
 
   useEffect(() => {
     const savedUser = localStorage.getItem("username");
@@ -58,7 +58,24 @@ const [showNotifications, setShowNotifications] = useState(false);
           {!isCollapsed && <p className="menu-title">Chức năng</p>}
           <ul>
            <li onClick={() => navigate("dashboard")} className='tong'><FontAwesomeIcon icon={faGrip} /><span>Tổng quan</span></li> 
-          <li  className='truy'><FontAwesomeIcon icon={faCar} /><span>Truy vấn thông tin xe</span></li>
+            <li
+    className="truy"
+    onClick={() => setSelectedAction(selectedAction === "vehicle" ? null : "vehicle")}
+  >
+    <FontAwesomeIcon icon={faCar} />
+    <span>Truy vấn thông tin xe</span>
+  </li>
+               {selectedAction === "vehicle" && (
+    <ul className="submenu">
+      <li onClick={() => navigate("vehiclebrand")}>Thương hiệu</li>
+      <li onClick={() => navigate("vehiclemodel")}>Dòng xe</li>
+      <li onClick={() => navigate("vehiclevariant")}>Phiên bản</li>
+      <li onClick={() => navigate("vehiclcolor")}>Màu sắc</li>
+     
+    </ul>
+  )}
+
+
            <li className='quan'><FontAwesomeIcon icon={faFileAlt} /><span>Báo giá</span></li>
            <li onClick={()=> navigate("customer")} className='hang'><FontAwesomeIcon icon={faUsers} /><span>Khách hàng</span></li>
             <li onClick={()=> navigate("order")}  className='don'><FontAwesomeIcon icon={faShoppingCart} /><span>Đơn hàng</span></li>
