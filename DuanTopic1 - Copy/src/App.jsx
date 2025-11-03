@@ -16,6 +16,8 @@ import VehicleModel from './Pages/Admin/VehicleModel';
 import VehicleVariant from './Pages/Admin/VehicleVariant';
 import VehicleColor from './Pages/Admin/VehicleColor';
 import Dealer from './Pages/Admin/Dealer';
+import Warehouse from './Pages/Admin/Warehouse';
+import VehicleInventory from './Pages/Admin/VehicleInventory';
 
 function App() {
   return (
@@ -50,6 +52,8 @@ function App() {
              <Route path='vehiclevariant' element={<VehicleVariant />} />
               <Route path='vehiclcolor' element={<VehicleColor />} />
                <Route path='createdealer' element={<Dealer />} />
+                <Route path='warehouse' element={<Warehouse />} />
+                 <Route path='vehicleinventory' element={<VehicleInventory />} />
               <></>
           </Route>
           

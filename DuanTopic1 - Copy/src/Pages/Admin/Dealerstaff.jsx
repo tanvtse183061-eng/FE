@@ -1,6 +1,6 @@
 import './dealerstaff.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserShield, faCar, faMoneyCheckDollar ,faTruck, faUsers, faFileAlt, faSearch, faBell, faEnvelope, faBars,faGrip,faShoppingCart, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import { faUserShield, faCar, faMoneyCheckDollar ,faTruck, faUsers, faFileAlt, faSearch, faBell, faEnvelope, faBars,faGrip,faShoppingCart, faUserPlus, faWarehouse, faBoxes } from '@fortawesome/free-solid-svg-icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { InputGroup, FormControl } from "react-bootstrap";
 import { Outlet,useNavigate } from "react-router-dom";
@@ -76,6 +76,8 @@ const [selectedAction, setSelectedAction] = useState(null);
             )}
 
            <li onClick={() => navigate("createdealer")} className='dealer'><FontAwesomeIcon icon={faUserPlus} /><span>Tạo Dealer</span></li>
+           <li onClick={() => navigate("warehouse")} className='kho'><FontAwesomeIcon icon={faWarehouse} /><span>Kho</span></li>
+           <li onClick={() => navigate("vehicleinventory")} className='tonkho'><FontAwesomeIcon icon={faBoxes} /><span>Tồn kho xe</span></li>
            <li className='quan'><FontAwesomeIcon icon={faFileAlt} /><span>Báo giá</span></li>
            <li onClick={()=> navigate("customer")} className='hang'><FontAwesomeIcon icon={faUsers} /><span>Khách hàng</span></li>
            <li onClick={()=> navigate("order")}  className='don'><FontAwesomeIcon icon={faShoppingCart} /><span>Đơn hàng</span></li>
