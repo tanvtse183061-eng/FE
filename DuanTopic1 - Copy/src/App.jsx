@@ -4,17 +4,18 @@ import HomePage from './Pages/HomePage';
 import Login from './Pages/Login/Login';
 import MainLayout from './layouts/MainLayout';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Dealerstaff from './Pages/DealerStaff/Dealerstaff';
-import Dashboard from './Pages/DealerStaff/Dashboard';
-import Customer from './Pages/DealerStaff/Customer';
-import Order from './Pages/DealerStaff/Order';
-import Cardelivery from './Pages/DealerStaff/Cardelivery';
-import Paymentcustomer from './Pages/DealerStaff/Paymentcustomer';
+import Dealerstaff from './Pages/Admin/Dealerstaff';
+import Dashboard from './Pages/Admin/Dashboard';
+import Customer from './Pages/Admin/Customer';
+import Order from './Pages/Admin/Order';
+import Cardelivery from './Pages/Admin/Cardelivery';
+import Paymentcustomer from './Pages/Admin/Paymentcustomer';
 import HerioGreen from './components/CarSection/HerioGreen';
-import VehicleBrand from './Pages/DealerStaff/VehicleBrand';
-import VehicleModel from './Pages/DealerStaff/VehicleModel';
-import VehicleVariant from './Pages/DealerStaff/VehicleVariant';
-import VehicleColor from './Pages/DealerStaff/VehicleColor';
+import VehicleBrand from './Pages/Admin/VehicleBrand';
+import VehicleModel from './Pages/Admin/VehicleModel';
+import VehicleVariant from './Pages/Admin/VehicleVariant';
+import VehicleColor from './Pages/Admin/VehicleColor';
+import Dealer from './Pages/Admin/Dealer';
 
 function App() {
   return (
@@ -48,6 +49,8 @@ function App() {
             <Route path='vehiclemodel' element={<VehicleModel />} />
              <Route path='vehiclevariant' element={<VehicleVariant />} />
               <Route path='vehiclcolor' element={<VehicleColor />} />
+               <Route path='createdealer' element={<Dealer />} />
+              <></>
           </Route>
           
         </Routes>
