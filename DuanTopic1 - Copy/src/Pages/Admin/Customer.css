@@ -146,7 +146,8 @@ main {
 .customer-table td {
     padding: 14px 16px;
     border-bottom: 1px solid #f1f5f9;
-    color: #334155;
+    color: #1e293b !important;
+    /* ← THÊM !important */
     font-size: 14px;
 }
 
