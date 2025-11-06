@@ -1,147 +1,164 @@
-
-import './Login.css'
+import "./Login.css";
 import { useState } from "react";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleUser } from '@fortawesome/free-solid-svg-icons';
-import { faEye, faEyeSlash,faHouse } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
-import API from "./API";
-import { useNavigate } from 'react-router-dom';
-const initFormValue = {
-    username: "",
-    password: ""
-};
-const isEmptyValue=(value) =>{
-    return ! value || value.trim().length<1;
-}
-export default function Login(){
-     const navigate = useNavigate();
-      const [showPassword,setShowPassword] =useState(false);
-      const togglePassword =()=>{
-        setShowPassword(!showPassword);
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faCircleUser,
+  faEye,
+  faEyeSlash,
+  faHouse,
+} from "@fortawesome/free-solid-svg-icons";
+import { Link, useNavigate } from "react-router-dom";
+import { authAPI } from "../../services/API.js";
+
+const initForm = { username: "", password: "" };
+
+export default function Login() {
+  const navigate = useNavigate();
+  const [form, setForm] = useState(initForm);
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Kiểm tra giá trị trống
+  const isEmpty = (val) => !val || val.trim() === "";
+
+  // ✅ Validate form
+  const validateForm = () => {
+    const newErrors = {};
+    if (isEmpty(form.username)) newErrors.username = "Username is required";
+    if (isEmpty(form.password)) newErrors.password = "Password is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // ✅ Xử lý thay đổi input
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ✅ Toggle hiển thị mật khẩu
+  const togglePassword = () => setShowPassword((prev) => !prev);
+
+  // ✅ Xử lý đăng nhập
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const res = await authAPI.login({
+        username: form.username,
+        password: form.password,
+      });
+
+      const data = res.data;
+      console.log("✅ Login response:", data);
+
+      if (data?.accessToken) {
+        localStorage.setItem("token", data.accessToken);
+        localStorage.setItem("username", data.username);
+        localStorage.setItem("role", data.role);
+
+        alert("Đăng nhập thành công!");
+        navigate("/dealerstaff");
+      } else {
+        alert("Sai tài khoản hoặc mật khẩu!");
       }
-      const [formValue, setFormValue]=useState(initFormValue);
-    const handleChange =(event) =>{
-        const {name,value} =event.target;
-        setFormValue({
-            ...formValue,
-            [name]:value,
-
-        })
+    } catch (err) {
+      console.error("❌ Login error:", err);
+      if (err.response) {
+        alert(
+          `Lỗi đăng nhập: ${err.response.status}\n${JSON.stringify(
+            err.response.data
+          )}`
+        );
+      } else if (err.request) {
+        alert(
+          "❌ Không thể kết nối tới backend.\nHãy chắc rằng Spring Boot đang chạy tại http://localhost:8080"
+        );
+      } else {
+        alert(`Lỗi: ${err.message}`);
+      }
+    } finally {
+      setLoading(false);
     }
-    
-    const handleSubmit = async (event) =>{
-    event.preventDefault();
-    if (validateForm()){
-        try{
-            const response = await API.post("/api/auth/login", {
-                username: formValue.username,
-                password: formValue.password
-            });
-                  if (response.data?.accessToken) {
-                 localStorage.setItem("token", response.data.accessToken);
-                 localStorage.setItem("username", response.data.username);
-                 localStorage.setItem("role", response.data.role);
-                  navigate("/dealerstaff");
-} else {
-    alert("Invalid username or password");
-}
-           
+  };
 
-        } catch (error){
-            console.error("Login error:", error);
-            if (error.response) {
-                console.error("Server responded with:", error.response.status, error.response.data);
-                alert(`Login failed: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
-            } else if (error.request) {
-                console.error("No response received, request was:", error.request);
-                alert("Login failed: No response from server. Is the backend running?");
-            } else {
-                alert(`Login failed: ${error.message}`);
-            }
-        }
-    } else {
-        console.log("errors:",formError);
-    }
-};
+  return (
+    <div className="Login-page">
+      <div className="Login-form-container">
+        <h1>Đăng nhập</h1>
 
-
-    
- const [formError,setFormError]=useState({});
-const validateForm = () =>{
-    const error={};
-    if(isEmptyValue(formValue.username)){
-        error["username"]="Username is required"
-    }
-    if (isEmptyValue(formValue.password)) {
-        error["password"] = "Password is required"
-    }
-    setFormError(error);
-    return Object.keys(error).length === 0;
-    
-}
-
-    return(
-     <div className="Login-page">
-       <div className="Login-form-container">
-        <h1 >Login</h1>
-        <form className='input-box' onSubmit={handleSubmit}>
-            <div className="content">
-                <input
+        <form className="input-box" onSubmit={handleSubmit}>
+          <div className="content">
+            {/* Username */}
+            <div className="input-wrapper">
+              <input
                 id="username"
                 className="form-control"
                 type="text"
                 name="username"
-                value={formValue.username}
+                value={form.username}
                 onChange={handleChange}
-                placeholder="UserName"
-                />
+                placeholder="Username"
+              />
+              <FontAwesomeIcon
+                icon={faCircleUser}
+                size="sm"
+                color="navy"
+                className="icon"
+              />
+              {errors.username && (
+                <p className="error-text">{errors.username}</p>
+              )}
+            </div>
 
-            
-                        <FontAwesomeIcon icon={faCircleUser} size="sm" color="navy" className='icon'/>
-                             <div className='error'>
-              {formError.username && <p className="error-text">{formError.username}</p>}
-              </div>
-                    
-                       
-                        <input
-                            id="password"
-                            className="form-control"
-                            type={showPassword ?"text":"password"}
-                            name="password"
-                                value={formValue.password}
-                                onChange={handleChange}
-                                placeholder="Password"
-                        />  
-                        <span onClick={togglePassword} style={{cursor:"pointer"}} className='icon' >
-                            <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye}  ></FontAwesomeIcon>
+            {/* Password */}
+            <div className="input-wrapper">
+              <input
+                id="password"
+                className="form-control"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Password"
+              />
+              <span
+                onClick={togglePassword}
+                className="icon"
+                style={{ cursor: "pointer" }}
+              >
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+              </span>
+              {errors.password && (
+                <p className="error-text">{errors.password}</p>
+              )}
+            </div>
+          </div>
 
-                        </span>
-                        <div className='error'>
-                            {formError.password && <p className="error-text">{formError.password}</p>}
-                                  </div>
-                 
-                               </div>
-                    
-                        <div className='checkbox'>
-                        <input type="checkbox" id="remember"  />
-                            <label htmlFor="remember" >Remember me</label>
-                        </div>
-                        <div className='button'>
-                           <button type="submit" className="btn-login">
-                            Login
-                        </button> 
-                        </div>
-                        
-                              </form>    <div className='Home'>
-                    <Link to="/home"><FontAwesomeIcon icon={faHouse}   size='2x' color='gray' /></Link>
-                     </div>
-                
-       </div>
-     </div>
+          {/* Remember me */}
+          <div className="checkbox">
+            <input type="checkbox" id="remember" />
+            <label htmlFor="remember">Remember me</label>
+          </div>
 
-        
-    )
+          {/* Submit */}
+          <div className="button">
+            <button type="submit" className="btn-login" disabled={loading}>
+              {loading ? "Đang đăng nhập..." : "Login"}
+            </button>
+          </div>
+        </form>
+
+        {/* Home icon */}
+        <div className="Home">
+          <Link to="/home">
+            <FontAwesomeIcon icon={faHouse} size="2x" color="gray" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }
-
-

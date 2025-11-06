@@ -1,7 +1,7 @@
 import './Customer.css';
 import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import API from '../Login/API';
+import { dealerAPI } from "../../services/API.js";
 
 export default function Dealer() {
   const [dealers, setDealers] = useState([]);
@@ -39,7 +39,7 @@ export default function Dealer() {
   // ✅ Lấy danh sách dealer
   const fetchDealers = async () => {
     try {
-      const res = await API.get("/api/dealers");
+      const res = await dealerAPI.getAll();
       setDealers(res.data);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách dealer:", err);
@@ -50,7 +50,7 @@ export default function Dealer() {
     fetchDealers();
   }, []);
 
-  // ✅ Tìm kiếm dealer
+  // ✅ Tìm kiếm realtime
   useEffect(() => {
     const delay = setTimeout(async () => {
       const trimmed = searchTerm.trim();
@@ -59,7 +59,7 @@ export default function Dealer() {
         return;
       }
       try {
-        const res = await API.get(`/api/dealers/search?keyword=${encodeURIComponent(trimmed)}`);
+        const res = await dealerAPI.search(trimmed);
         setDealers(res.data);
       } catch (err) {
         console.error("Lỗi tìm kiếm:", err);
@@ -115,7 +115,7 @@ export default function Dealer() {
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa dealer này không?")) return;
     try {
-      await API.delete(`/api/dealers/${id}`);
+      await dealerAPI.delete(id);
       alert("Xóa dealer thành công!");
       fetchDealers();
     } catch (err) {
@@ -135,10 +135,10 @@ export default function Dealer() {
 
     try {
       if (isEdit && selectedDealer) {
-        await API.put(`/api/dealers/${selectedDealer.dealerId}`, formData);
+        await dealerAPI.update(selectedDealer.dealerId, formData);
         alert("Cập nhật dealer thành công!");
       } else {
-        await API.post("/api/dealers", formData);
+        await dealerAPI.create(formData);
         alert("Thêm dealer thành công!");
       }
       setShowPopup(false);
@@ -229,13 +229,9 @@ export default function Dealer() {
                 <input name="address" placeholder="Địa chỉ" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})}/>
                 <input name="city" placeholder="Thành phố" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})}/>
                 <input name="province" placeholder="Tỉnh/Thành" value={formData.province} onChange={e => setFormData({...formData, province: e.target.value})}/>
-                <input name="postalCode" placeholder="Mã bưu điện" value={formData.postalCode} onChange={e => setFormData({...formData, postalCode: e.target.value})}/>
                 <input name="dealerType" placeholder="Loại dealer" value={formData.dealerType} onChange={e => setFormData({...formData, dealerType: e.target.value})}/>
-                <input name="licenseNumber" placeholder="Số giấy phép" value={formData.licenseNumber} onChange={e => setFormData({...formData, licenseNumber: e.target.value})}/>
-                <input name="taxCode" placeholder="Mã số thuế" value={formData.taxCode} onChange={e => setFormData({...formData, taxCode: e.target.value})}/>
+                <input name="bankName" placeholder="Ngân hàng" value={formData.bankName} onChange={e => setFormData({...formData, bankName: e.target.value})}/>
                 <input name="bankAccount" placeholder="Tài khoản ngân hàng" value={formData.bankAccount} onChange={e => setFormData({...formData, bankAccount: e.target.value})}/>
-                <input name="bankName" placeholder="Tên ngân hàng" value={formData.bankName} onChange={e => setFormData({...formData, bankName: e.target.value})}/>
-                <input name="commissionRate" type="number" placeholder="Tỷ lệ hoa hồng" value={formData.commissionRate} onChange={e => setFormData({...formData, commissionRate: e.target.value})}/>
                 <textarea name="notes" placeholder="Ghi chú" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea>
               </div>
               {error && <span className="error">{error}</span>}
@@ -252,19 +248,17 @@ export default function Dealer() {
       {showDetail && selectedDealer && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h2>Thông tin dealer</h2>
+            <h2>Thông tin đại lý</h2>
             <p><b>Mã:</b> {selectedDealer.dealerCode}</p>
             <p><b>Tên:</b> {selectedDealer.dealerName}</p>
-            <p><b>Người liên hệ:</b> {selectedDealer.contactPerson}</p>
+            <p><b>Liên hệ:</b> {selectedDealer.contactPerson}</p>
             <p><b>Điện thoại:</b> {selectedDealer.phone}</p>
             <p><b>Email:</b> {selectedDealer.email}</p>
             <p><b>Địa chỉ:</b> {selectedDealer.address}, {selectedDealer.city}, {selectedDealer.province}</p>
-            <p><b>Trạng thái:</b> {selectedDealer.status}</p>
             <p><b>Loại:</b> {selectedDealer.dealerType}</p>
-            <p><b>Số giấy phép:</b> {selectedDealer.licenseNumber}</p>
-            <p><b>Mã số thuế:</b> {selectedDealer.taxCode}</p>
             <p><b>Ngân hàng:</b> {selectedDealer.bankName} - {selectedDealer.bankAccount}</p>
-            <p><b>Tỷ lệ hoa hồng:</b> {selectedDealer.commissionRate}</p>
+            <p><b>Hoa hồng:</b> {selectedDealer.commissionRate}%</p>
+            <p><b>Trạng thái:</b> {selectedDealer.status}</p>
             <p><b>Ghi chú:</b> {selectedDealer.notes}</p>
             <button className="btn-close" onClick={() => setShowDetail(false)}>Đóng</button>
           </div>

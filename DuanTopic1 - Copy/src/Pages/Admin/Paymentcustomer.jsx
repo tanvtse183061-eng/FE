@@ -1,6 +1,5 @@
 import { FaSearch, FaEye, FaPen, FaTrash } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import API from "../Login/API";
 
 
 export default function PaymentCustomer() {

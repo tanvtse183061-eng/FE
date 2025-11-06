@@ -1,7 +1,7 @@
-import './Customer.css';
+import "./Customer.css";
 import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import API from '../Login/API';
+import { warehouseAPI } from "../../services/API.js";
 
 export default function Warehouse() {
   const [warehouses, setWarehouses] = useState([]);
@@ -28,7 +28,7 @@ export default function Warehouse() {
   // ✅ Lấy danh sách kho
   const fetchWarehouses = async () => {
     try {
-      const res = await API.get("/api/warehouses");
+      const res = await warehouseAPI.getWarehouses();
       setWarehouses(res.data);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách kho:", err);
@@ -48,7 +48,7 @@ export default function Warehouse() {
         return;
       }
       try {
-        const res = await API.get(`/api/warehouses/search?name=${encodeURIComponent(trimmed)}`);
+        const res = await warehouseAPI.searchWarehouses(trimmed);
         setWarehouses(res.data);
       } catch (err) {
         console.error("Lỗi tìm kiếm:", err);
@@ -85,18 +85,7 @@ export default function Warehouse() {
   const handleEdit = (warehouse) => {
     setIsEdit(true);
     setSelectedWarehouse(warehouse);
-    setFormData({
-      warehouseName: warehouse.warehouseName,
-      warehouseCode: warehouse.warehouseCode,
-      address: warehouse.address,
-      city: warehouse.city,
-      province: warehouse.province,
-      postalCode: warehouse.postalCode,
-      phone: warehouse.phone,
-      email: warehouse.email,
-      capacity: warehouse.capacity,
-      isActive: warehouse.isActive,
-    });
+    setFormData({ ...warehouse });
     setShowPopup(true);
   };
 
@@ -104,7 +93,7 @@ export default function Warehouse() {
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa kho này không?")) return;
     try {
-      await API.delete(`/api/warehouses/${id}`);
+      await warehouseAPI.deleteWarehouse(id);
       alert("Xóa kho thành công!");
       fetchWarehouses();
     } catch (err) {
@@ -122,14 +111,12 @@ export default function Warehouse() {
       return;
     }
 
-    const payload = { ...formData };
-
     try {
       if (isEdit && selectedWarehouse) {
-        await API.put(`/api/warehouses/${selectedWarehouse.warehouseId}`, payload);
+        await warehouseAPI.updateWarehouse(selectedWarehouse.warehouseId, formData);
         alert("Cập nhật kho thành công!");
       } else {
-        await API.post("/api/warehouses", payload);
+        await warehouseAPI.createWarehouse(formData);
         alert("Thêm kho thành công!");
       }
       setShowPopup(false);

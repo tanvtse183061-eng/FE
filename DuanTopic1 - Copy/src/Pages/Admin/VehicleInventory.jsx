@@ -1,106 +1,88 @@
-import './Customer.css';
-import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import API from '../Login/API';
+import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
+import { inventoryAPI, publicVehicleAPI } from "../../services/API";
+import "./Customer.css";
 
 export default function VehicleInventory() {
-  const [inventories, setInventories] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [variants, setVariants] = useState([]);
   const [colors, setColors] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
-  const [dealers, setDealers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [selectedInventory, setSelectedInventory] = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
+    vin: "",
+    chassisNumber: "",
+    licensePlate: "",
     variantId: "",
     colorId: "",
     warehouseId: "",
-    dealerId: "",
-    vin: "",
-    stockQuantity: 0,
-    availableQuantity: 0,
-    reservedQuantity: 0,
-    status: "IN_STOCK",
-    condition: "NEW",
     manufacturingDate: "",
     arrivalDate: "",
-    notes: "",
+    price: "",
+    status: "AVAILABLE",
   });
 
-  // ✅ Lấy danh sách variants
-  const fetchVariants = async () => {
-    try {
-      const res = await API.get("/api/vehicles/variants");
-      setVariants(res.data);
-    } catch (err) {
-      console.error("Lỗi lấy variants:", err);
-    }
+  // 🔹 Helper: Lấy tên từ ID
+  const getVariantName = (variantId) => {
+    const variant = variants.find(v => v.id === variantId);
+    return variant?.name || "—";
   };
 
-  // ✅ Lấy danh sách colors
-  const fetchColors = async () => {
-    try {
-      const res = await API.get("/api/vehicles/colors");
-      setColors(res.data);
-    } catch (err) {
-      console.error("Lỗi lấy colors:", err);
-    }
+  const getColorName = (colorId) => {
+    const color = colors.find(c => c.id === colorId);
+    return color?.color || "—";
   };
 
-  // ✅ Lấy danh sách warehouses
-  const fetchWarehouses = async () => {
-    try {
-      const res = await API.get("/api/warehouses");
-      setWarehouses(res.data);
-    } catch (err) {
-      console.error("Lỗi lấy warehouses:", err);
-    }
+  const getWarehouseName = (warehouseId) => {
+    const warehouse = warehouses.find(w => w.id === warehouseId);
+    return warehouse?.name || "—";
   };
 
-  // ✅ Lấy danh sách dealers
-  const fetchDealers = async () => {
+  // 🔹 Load data khi mở trang
+  const fetchAll = async () => {
     try {
-      const res = await API.get("/api/dealers");
-      setDealers(res.data);
-    } catch (err) {
-      console.error("Lỗi lấy dealers:", err);
-    }
-  };
+      const [vehicleRes, variantRes, colorRes, warehouseRes] = await Promise.all([
+        inventoryAPI.getInventory(),
+        publicVehicleAPI.getVariants(),
+        publicVehicleAPI.getColors(),
+        publicVehicleAPI.getWarehouses(),
+      ]);
 
-  // ✅ Lấy danh sách inventories
-  const fetchInventories = async () => {
-    try {
-      const res = await API.get("/api/inventory");
-      setInventories(res.data);
-    } catch (err) {
-      console.error("Lỗi lấy inventory:", err);
+      setVehicles(vehicleRes.data || []);
+      setVariants(variantRes.data || []);
+      setColors(colorRes.data || []);
+      setWarehouses(warehouseRes.data || []);
+    } catch (error) {
+      console.error("❌ Lỗi tải dữ liệu:", error);
     }
   };
 
   useEffect(() => {
-    fetchVariants();
-    fetchColors();
-    fetchWarehouses();
-    fetchDealers();
-    fetchInventories();
+    fetchAll();
   }, []);
 
-  // ✅ Tìm kiếm
+  // 🔹 Tìm kiếm theo biển số
   useEffect(() => {
     const delay = setTimeout(async () => {
-      const trimmed = searchTerm.trim();
-      if (trimmed === "") {
-        fetchInventories();
+      const q = searchTerm.trim();
+      if (!q) {
+        fetchAll();
         return;
       }
       try {
-        const res = await API.get(`/api/inventory/search?keyword=${encodeURIComponent(trimmed)}`);
-        setInventories(res.data);
+        const allVehicles = await inventoryAPI.getInventory();
+        const filtered = (allVehicles.data || []).filter(v => 
+          v.licensePlate?.toLowerCase().includes(q.toLowerCase()) ||
+          v.vin?.toLowerCase().includes(q.toLowerCase()) ||
+          v.chassisNumber?.toLowerCase().includes(q.toLowerCase())
+        );
+        setVehicles(filtered);
       } catch (err) {
         console.error("Lỗi tìm kiếm:", err);
       }
@@ -108,130 +90,124 @@ export default function VehicleInventory() {
     return () => clearTimeout(delay);
   }, [searchTerm]);
 
-  // ✅ Xem chi tiết
-  const handleView = (inventory) => {
-    setSelectedInventory(inventory);
-    setShowDetail(true);
-  };
-
-  // ✅ Mở form thêm
+  // 🔹 Mở popup thêm mới
   const handleOpenAdd = () => {
     setIsEdit(false);
-    setError("");
+    setSelectedVehicle(null);
     setFormData({
+      vin: "",
+      chassisNumber: "",
+      licensePlate: "",
       variantId: "",
       colorId: "",
       warehouseId: "",
-      dealerId: "",
-      vin: "",
-      stockQuantity: 0,
-      availableQuantity: 0,
-      reservedQuantity: 0,
-      status: "IN_STOCK",
-      condition: "NEW",
       manufacturingDate: "",
       arrivalDate: "",
-      notes: "",
+      price: "",
+      status: "AVAILABLE",
     });
-    setShowPopup(true);
-  };
-
-  // ✅ Mở form sửa
-  const handleEdit = (inventory) => {
-    setIsEdit(true);
-    setSelectedInventory(inventory);
     setError("");
-    setFormData({
-      variantId: inventory.variant?.variantId || "",
-      colorId: inventory.color?.colorId || "",
-      warehouseId: inventory.warehouse?.warehouseId || "",
-      dealerId: inventory.dealer?.dealerId || "",
-      vin: inventory.vin || "",
-      stockQuantity: inventory.stockQuantity || 0,
-      availableQuantity: inventory.availableQuantity || 0,
-      reservedQuantity: inventory.reservedQuantity || 0,
-      status: inventory.status || "IN_STOCK",
-      condition: inventory.condition || "NEW",
-      manufacturingDate: inventory.manufacturingDate?.split('T')[0] || "",
-      arrivalDate: inventory.arrivalDate?.split('T')[0] || "",
-      notes: inventory.notes || "",
-    });
     setShowPopup(true);
   };
 
-  // ✅ Xóa
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa kho xe này không?")) return;
-    try {
-      await API.delete(`/api/inventory/${id}`);
-      alert("Xóa thành công!");
-      fetchInventories();
-    } catch (err) {
-      console.error("Lỗi xóa:", err);
-      alert("Không thể xóa!");
-    }
+  // 🔹 Mở popup sửa
+  const handleEdit = (v) => {
+    setIsEdit(true);
+    setSelectedVehicle(v);
+    setFormData({
+      vin: v.vin || "",
+      chassisNumber: v.chassisNumber || "",
+      licensePlate: v.licensePlate || "",
+      variantId: v.variantId || "",
+      colorId: v.colorId || "",
+      warehouseId: v.warehouseId || "",
+      manufacturingDate: v.manufacturingDate || "",
+      arrivalDate: v.arrivalDate || "",
+      price: v.price || "",
+      status: v.status || "AVAILABLE",
+    });
+    setError("");
+    setShowPopup(true);
   };
 
-  // ✅ Submit form
+  // 🔹 Xem chi tiết
+  const handleView = (v) => {
+    setSelectedVehicle(v);
+    setShowDetail(true);
+  };
+
+  // 🔹 Thêm hoặc sửa xe
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!formData.variantId || !formData.colorId || !formData.warehouseId) {
-      setError("Vui lòng chọn biến thể, màu sắc và kho!");
+    if (!formData.vin || !formData.variantId) {
+      setError("Vui lòng nhập đầy đủ: VIN và Biến thể.");
       return;
     }
 
     const payload = {
+      vin: formData.vin,
+      chassisNumber: formData.chassisNumber || "",
+      licensePlate: formData.licensePlate || "",
       variantId: Number(formData.variantId),
-      colorId: Number(formData.colorId),
-      warehouseId: Number(formData.warehouseId),
-      dealerId: formData.dealerId ? Number(formData.dealerId) : null,
-      vin: formData.vin.trim() || null,
-      stockQuantity: Number(formData.stockQuantity),
-      availableQuantity: Number(formData.availableQuantity),
-      reservedQuantity: Number(formData.reservedQuantity),
-      status: formData.status,
-      condition: formData.condition,
+      colorId: formData.colorId ? Number(formData.colorId) : null,
+      warehouseId: formData.warehouseId ? Number(formData.warehouseId) : null,
       manufacturingDate: formData.manufacturingDate || null,
       arrivalDate: formData.arrivalDate || null,
-      notes: formData.notes.trim() || null,
+      price: formData.price ? Number(formData.price) : null,
+      status: formData.status || "AVAILABLE",
     };
 
     try {
-      if (isEdit && selectedInventory) {
-        await API.put(`/api/inventory/${selectedInventory.inventoryId}`, payload);
-        alert("Cập nhật thành công!");
+      if (isEdit && selectedVehicle) {
+        await inventoryAPI.updateInventory(selectedVehicle.id, payload);
+        alert("✅ Cập nhật xe thành công!");
       } else {
-        await API.post("/api/inventory", payload);
-        alert("Thêm mới thành công!");
+        await inventoryAPI.createInventory(payload);
+        alert("✅ Thêm xe thành công!");
       }
       setShowPopup(false);
-      fetchInventories();
+      fetchAll();
     } catch (err) {
-      console.error("Lỗi lưu:", err);
-      alert("Không thể lưu!");
+      console.error("❌ Lỗi lưu xe:", err);
+      const msg = err.response?.data?.message || JSON.stringify(err.response?.data) || err.message;
+      setError("Lưu thất bại: " + msg);
+      alert("Lưu thất bại: " + msg);
+    }
+  };
+
+  // 🔹 Xóa xe
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bạn có chắc muốn xóa xe này không?")) return;
+    try {
+      await inventoryAPI.deleteInventory(id);
+      alert("✅ Xóa thành công!");
+      fetchAll();
+    } catch (error) {
+      console.error("❌ Lỗi xóa xe:", error);
+      const msg = error.response?.data?.message || error.message || "Không thể xóa xe";
+      alert("Không thể xóa xe: " + msg);
     }
   };
 
   return (
     <div className="customer">
-      <div className="title-customer">Quản lý kho xe</div>
+      <div className="title-customer">📦 Quản lý kho xe</div>
+
       <div className="title2-customer">
         <h2>Danh sách xe trong kho</h2>
-        <h3 onClick={handleOpenAdd}>
-          <FaPlus /> Thêm xe vào kho
-        </h3>
+        <h3 onClick={handleOpenAdd}><FaPlus /> Thêm xe</h3>
       </div>
 
       <div className="title3-customer">
         <FaSearch className="search-icon" />
         <input
           type="text"
-          placeholder="Tìm kiếm xe..."
-          className="search-input"
+          placeholder="Tìm theo biển số, VIN, chassis..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
         />
       </div>
 
@@ -240,258 +216,155 @@ export default function VehicleInventory() {
           <thead>
             <tr>
               <th>VIN</th>
-              <th>BIẾN THỂ</th>
-              <th>MÀU SẮC</th>
-              <th>KHO</th>
-              <th>ĐẠI LÝ</th>
-              <th>SỐ LƯỢNG</th>
-              <th>CÓ SẴN</th>
-              <th>TRẠNG THÁI</th>
-              <th>THAO TÁC</th>
+              <th>Biển số</th>
+              <th>Biến thể</th>
+              <th>Màu</th>
+              <th>Kho</th>
+              <th>Giá</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
-            {inventories.length > 0 ? (
-              inventories.map((inv) => (
-                <tr key={inv.inventoryId}>
-                  <td>{inv.vin || "—"}</td>
-                  <td>{inv.variant?.variantName || "—"}</td>
+            {vehicles.length > 0 ? (
+              vehicles.map((v) => (
+                <tr key={v.id}>
+                  <td>{v.vin || "—"}</td>
+                  <td>{v.licensePlate || "—"}</td>
+                  <td>{getVariantName(v.variantId)}</td>
+                  <td>{getColorName(v.colorId)}</td>
+                  <td>{getWarehouseName(v.warehouseId)}</td>
+                  <td>{v.price ? `${Number(v.price).toLocaleString()} đ` : "—"}</td>
                   <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <div
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          backgroundColor: inv.color?.colorCode || "#ccc",
-                          border: "1px solid #ddd",
-                          borderRadius: "4px",
-                        }}
-                      ></div>
-                      {inv.color?.colorName || "—"}
-                    </div>
-                  </td>
-                  <td>{inv.warehouse?.warehouseName || "—"}</td>
-                  <td>{inv.dealer?.dealerName || "—"}</td>
-                  <td>{inv.stockQuantity || 0}</td>
-                  <td>{inv.availableQuantity || 0}</td>
-                  <td>
-                    <span
-                      style={{
-                        background: inv.status === "IN_STOCK" ? "#dcfce7" : "#fee2e2",
-                        color: inv.status === "IN_STOCK" ? "#16a34a" : "#dc2626",
-                        padding: "5px 8px",
-                        borderRadius: "5px",
-                      }}
-                    >
-                      {inv.status === "IN_STOCK" ? "Còn hàng" : inv.status}
+                    <span style={{
+                      background: v.status === 'AVAILABLE' ? "#dcfce7" : "#fee2e2",
+                      color: v.status === 'AVAILABLE' ? "#16a34a" : "#dc2626",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                    }}>
+                      {v.status || "—"}
                     </span>
                   </td>
                   <td className="action-buttons">
-                    <button className="icon-btn view" onClick={() => handleView(inv)}>
-                      <FaEye />
-                    </button>
-                    <button className="icon-btn edit" onClick={() => handleEdit(inv)}>
-                      <FaPen />
-                    </button>
-                    <button className="icon-btn delete" onClick={() => handleDelete(inv.inventoryId)}>
-                      <FaTrash />
-                    </button>
+                    <button onClick={() => handleView(v)} className="icon-btn view"><FaEye /></button>
+                    <button onClick={() => handleEdit(v)} className="icon-btn edit"><FaPen /></button>
+                    <button onClick={() => handleDelete(v.id)} className="icon-btn delete"><FaTrash /></button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="9" style={{ textAlign: "center", color: "#666" }}>
-                  Không có dữ liệu
-                </td>
+                <td colSpan="8" style={{ textAlign: "center" }}>Không có dữ liệu</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Popup thêm/sửa */}
+      {/* Popup Thêm / Sửa */}
       {showPopup && (
-        <div className="popup-overlay">
-          <div className="popup-box" style={{ maxWidth: "700px" }}>
-            <h2>{isEdit ? "Sửa thông tin xe" : "Thêm xe vào kho"}</h2>
+        <div className="popup-overlay" onClick={(e) => { if (e.target.className === 'popup-overlay') setShowPopup(false); }}>
+          <div className="popup-box">
+            <h2>{isEdit ? "✏️ Sửa xe" : "➕ Thêm xe"}</h2>
             <form onSubmit={handleSubmit}>
-              <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-                <div>
-                  <label>Biến thể xe *</label>
-                  <select
-                    value={formData.variantId}
-                    onChange={(e) => setFormData({ ...formData, variantId: e.target.value })}
-                    style={{ color: "black" }}
-                    required
-                  >
-                    <option value="">-- Chọn biến thể --</option>
-                    {variants.map((v) => (
-                      <option key={v.variantId} value={v.variantId}>
-                        {v.variantName} ({v.model?.modelName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="form-grid">
+                <input
+                  name="vin"
+                  placeholder="VIN *"
+                  value={formData.vin}
+                  onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
+                  required
+                />
 
-                <div>
-                  <label>Màu sắc *</label>
-                  <select
-                    value={formData.colorId}
-                    onChange={(e) => setFormData({ ...formData, colorId: e.target.value })}
-                    style={{ color: "black" }}
-                    required
-                  >
-                    <option value="">-- Chọn màu --</option>
-                    {colors.map((c) => (
-                      <option key={c.colorId} value={c.colorId}>
-                        {c.colorName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  name="chassisNumber"
+                  placeholder="Số khung"
+                  value={formData.chassisNumber}
+                  onChange={(e) => setFormData({ ...formData, chassisNumber: e.target.value })}
+                />
 
-                <div>
-                  <label>Kho *</label>
-                  <select
-                    value={formData.warehouseId}
-                    onChange={(e) => setFormData({ ...formData, warehouseId: e.target.value })}
-                    style={{ color: "black" }}
-                    required
-                  >
-                    <option value="">-- Chọn kho --</option>
-                    {warehouses.map((w) => (
-                      <option key={w.warehouseId} value={w.warehouseId}>
-                        {w.warehouseName} - {w.city}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  name="licensePlate"
+                  placeholder="Biển số"
+                  value={formData.licensePlate}
+                  onChange={(e) => setFormData({ ...formData, licensePlate: e.target.value })}
+                />
 
-                <div>
-                  <label>Đại lý (Optional)</label>
-                  <select
-                    value={formData.dealerId}
-                    onChange={(e) => setFormData({ ...formData, dealerId: e.target.value })}
-                    style={{ color: "black" }}
-                  >
-                    <option value="">-- Không chọn --</option>
-                    {dealers.map((d) => (
-                      <option key={d.dealerId} value={d.dealerId}>
-                        {d.dealerName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  name="variantId"
+                  value={formData.variantId}
+                  onChange={(e) => setFormData({ ...formData, variantId: e.target.value })}
+                  required
+                >
+                  <option value="">-- Chọn biến thể --</option>
+                  {variants.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </select>
 
-                <div>
-                  <label>VIN (Số khung)</label>
-                  <input
-                    placeholder="VIN"
-                    value={formData.vin}
-                    onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
-                    style={{ color: "black" }}
-                  />
-                </div>
+                <select
+                  name="colorId"
+                  value={formData.colorId}
+                  onChange={(e) => setFormData({ ...formData, colorId: e.target.value })}
+                >
+                  <option value="">-- Chọn màu --</option>
+                  {colors.map((c) => (
+                    <option key={c.id} value={c.id}>{c.color}</option>
+                  ))}
+                </select>
 
-                <div>
-                  <label>Số lượng tồn kho</label>
-                  <input
-                    type="number"
-                    placeholder="Số lượng"
-                    value={formData.stockQuantity}
-                    onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
-                    style={{ color: "black" }}
-                  />
-                </div>
+                <select
+                  name="warehouseId"
+                  value={formData.warehouseId}
+                  onChange={(e) => setFormData({ ...formData, warehouseId: e.target.value })}
+                >
+                  <option value="">-- Chọn kho --</option>
+                  {warehouses.map((w) => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
 
-                <div>
-                  <label>Số lượng có sẵn</label>
-                  <input
-                    type="number"
-                    placeholder="Có sẵn"
-                    value={formData.availableQuantity}
-                    onChange={(e) => setFormData({ ...formData, availableQuantity: e.target.value })}
-                    style={{ color: "black" }}
-                  />
-                </div>
+                <input
+                  name="price"
+                  type="number"
+                  placeholder="Giá (VNĐ)"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                />
 
-                <div>
-                  <label>Số lượng đã đặt</label>
-                  <input
-                    type="number"
-                    placeholder="Đã đặt"
-                    value={formData.reservedQuantity}
-                    onChange={(e) => setFormData({ ...formData, reservedQuantity: e.target.value })}
-                    style={{ color: "black" }}
-                  />
-                </div>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                >
+                  <option value="AVAILABLE">Available</option>
+                  <option value="SOLD">Sold</option>
+                  <option value="RESERVED">Reserved</option>
+                  <option value="IN_TRANSIT">In Transit</option>
+                </select>
 
-                <div>
-                  <label>Trạng thái</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    style={{ color: "black" }}
-                  >
-                    <option value="IN_STOCK">Còn hàng</option>
-                    <option value="OUT_OF_STOCK">Hết hàng</option>
-                    <option value="IN_TRANSIT">Đang vận chuyển</option>
-                    <option value="RESERVED">Đã đặt</option>
-                  </select>
-                </div>
+                <input
+                  name="manufacturingDate"
+                  type="date"
+                  placeholder="Ngày sản xuất"
+                  value={formData.manufacturingDate}
+                  onChange={(e) => setFormData({ ...formData, manufacturingDate: e.target.value })}
+                />
 
-                <div>
-                  <label>Tình trạng</label>
-                  <select
-                    value={formData.condition}
-                    onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                    style={{ color: "black" }}
-                  >
-                    <option value="NEW">Mới</option>
-                    <option value="USED">Đã qua sử dụng</option>
-                    <option value="DEMO">Demo</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label>Ngày sản xuất</label>
-                  <input
-                    type="date"
-                    value={formData.manufacturingDate}
-                    onChange={(e) => setFormData({ ...formData, manufacturingDate: e.target.value })}
-                    style={{ color: "black" }}
-                  />
-                </div>
-
-                <div>
-                  <label>Ngày nhập kho</label>
-                  <input
-                    type="date"
-                    value={formData.arrivalDate}
-                    onChange={(e) => setFormData({ ...formData, arrivalDate: e.target.value })}
-                    style={{ color: "black" }}
-                  />
-                </div>
-
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label>Ghi chú</label>
-                  <textarea
-                    placeholder="Ghi chú..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    style={{ color: "black" }}
-                  ></textarea>
-                </div>
+                <input
+                  name="arrivalDate"
+                  type="date"
+                  placeholder="Ngày nhập kho"
+                  value={formData.arrivalDate}
+                  onChange={(e) => setFormData({ ...formData, arrivalDate: e.target.value })}
+                />
               </div>
 
-              {error && <span className="error">{error}</span>}
+              {error && <div className="error" style={{ color: 'red', marginTop: 8 }}>{error}</div>}
 
               <div className="form-actions">
                 <button type="submit">{isEdit ? "Cập nhật" : "Tạo mới"}</button>
-                <button type="button" onClick={() => setShowPopup(false)}>
-                  Hủy
-                </button>
+                <button type="button" onClick={() => setShowPopup(false)}>Hủy</button>
               </div>
             </form>
           </div>
@@ -499,26 +372,21 @@ export default function VehicleInventory() {
       )}
 
       {/* Popup xem chi tiết */}
-      {showDetail && selectedInventory && (
-        <div className="popup-overlay">
+      {showDetail && selectedVehicle && (
+        <div className="popup-overlay" onClick={(e) => { if (e.target.className === 'popup-overlay') setShowDetail(false); }}>
           <div className="popup-box">
-            <h2>Thông tin xe trong kho</h2>
-            <p><b>VIN:</b> {selectedInventory.vin || "—"}</p>
-            <p><b>Biến thể:</b> {selectedInventory.variant?.variantName}</p>
-            <p><b>Màu sắc:</b> {selectedInventory.color?.colorName}</p>
-            <p><b>Kho:</b> {selectedInventory.warehouse?.warehouseName}</p>
-            <p><b>Đại lý:</b> {selectedInventory.dealer?.dealerName || "—"}</p>
-            <p><b>Số lượng tồn:</b> {selectedInventory.stockQuantity}</p>
-            <p><b>Có sẵn:</b> {selectedInventory.availableQuantity}</p>
-            <p><b>Đã đặt:</b> {selectedInventory.reservedQuantity}</p>
-            <p><b>Trạng thái:</b> {selectedInventory.status}</p>
-            <p><b>Tình trạng:</b> {selectedInventory.condition}</p>
-            <p><b>Ngày sản xuất:</b> {selectedInventory.manufacturingDate || "—"}</p>
-            <p><b>Ngày nhập kho:</b> {selectedInventory.arrivalDate || "—"}</p>
-            <p><b>Ghi chú:</b> {selectedInventory.notes || "—"}</p>
-            <button className="btn-close" onClick={() => setShowDetail(false)}>
-              Đóng
-            </button>
+            <h2>👁️ Chi tiết xe</h2>
+            <p><b>VIN:</b> {selectedVehicle.vin || "—"}</p>
+            <p><b>Số khung:</b> {selectedVehicle.chassisNumber || "—"}</p>
+            <p><b>Biển số:</b> {selectedVehicle.licensePlate || "—"}</p>
+            <p><b>Biến thể:</b> {getVariantName(selectedVehicle.variantId)}</p>
+            <p><b>Màu:</b> {getColorName(selectedVehicle.colorId)}</p>
+            <p><b>Kho:</b> {getWarehouseName(selectedVehicle.warehouseId)}</p>
+            <p><b>Giá:</b> {selectedVehicle.price ? `${Number(selectedVehicle.price).toLocaleString()} đ` : "—"}</p>
+            <p><b>Trạng thái:</b> {selectedVehicle.status || "—"}</p>
+            <p><b>Ngày sản xuất:</b> {selectedVehicle.manufacturingDate || "—"}</p>
+            <p><b>Ngày nhập kho:</b> {selectedVehicle.arrivalDate || "—"}</p>
+            <button onClick={() => setShowDetail(false)}>Đóng</button>
           </div>
         </div>
       )}

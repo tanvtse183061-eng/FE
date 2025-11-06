@@ -1,7 +1,7 @@
 import './Customer.css';
 import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import API from '../Login/API';
+import { vehicleAPI } from "../../services/API"; 
 
 export default function VehicleBrand() {
   const [brands, setBrands] = useState([]);
@@ -24,10 +24,10 @@ export default function VehicleBrand() {
   // ✅ Lấy danh sách thương hiệu
   const fetchBrands = async () => {
     try {
-      const res = await API.get("/api/vehicles/brands");
+      const res = await vehicleAPI.getBrands();
       setBrands(res.data);
     } catch (err) {
-      console.error("Lỗi khi lấy danh sách thương hiệu:", err);
+      console.error("❌ Lỗi khi lấy danh sách thương hiệu:", err);
     }
   };
 
@@ -44,10 +44,10 @@ export default function VehicleBrand() {
         return;
       }
       try {
-        const res = await API.get(`/api/vehicles/brands/search?name=${encodeURIComponent(trimmed)}`);
+        const res = await vehicleAPI.getBrands(`/search?name=${encodeURIComponent(trimmed)}`);
         setBrands(res.data);
       } catch (err) {
-        console.error("Lỗi tìm kiếm:", err);
+        console.error("❌ Lỗi tìm kiếm:", err);
       }
     }, 400);
     return () => clearTimeout(delay);
@@ -83,28 +83,27 @@ export default function VehicleBrand() {
       foundedYear: brand.foundedYear || "",
       brandLogoUrl: brand.brandLogoUrl || "",
       brandLogoPath: brand.brandLogoPath || "",
-      isActive: brand.isActive !== undefined ? brand.isActive : true,
+      isActive: brand.isActive ?? true,
     });
     setShowPopup(true);
   };
 
   // ✅ Xóa thương hiệu
-  const handleDelete = async (id) => {
+  const handleDelete = async (brandId) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa thương hiệu này không?")) return;
     try {
-      await API.delete(`/api/vehicles/brands/${id}`);
-      alert("Xóa thương hiệu thành công!");
+      await vehicleAPI.deleteBrand(brandId);
+      alert("✅ Xóa thương hiệu thành công!");
       fetchBrands();
     } catch (err) {
-      console.error("Lỗi khi xóa:", err);
+      console.error("❌ Lỗi khi xóa:", err);
       alert("Không thể xóa thương hiệu!");
     }
   };
 
-  // ✅ Gửi form thêm/sửa
+  // ✅ Thêm / Sửa thương hiệu
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.brandName || !formData.country) {
       setError("Vui lòng nhập đầy đủ thông tin!");
       return;
@@ -116,36 +115,34 @@ export default function VehicleBrand() {
       foundedYear: formData.foundedYear ? Number(formData.foundedYear) : null,
       brandLogoUrl: formData.brandLogoUrl || "",
       brandLogoPath: formData.brandLogoPath || "",
-      isActive: formData.isActive !== undefined ? formData.isActive : true,
+      isActive: formData.isActive ?? true,
     };
 
     try {
       if (isEdit && selectedBrand) {
-        await API.put(`/api/vehicles/brands/${selectedBrand.brandId}`, payload);
-        alert("Cập nhật thương hiệu thành công!");
+        await vehicleAPI.updateBrand(selectedBrand.brandId, payload);
+        alert("✅ Cập nhật thương hiệu thành công!");
       } else {
-        await API.post("/api/vehicles/brands", payload);
-        alert("Thêm thương hiệu thành công!");
+        await vehicleAPI.createBrand(payload);
+        alert("✅ Thêm thương hiệu thành công!");
       }
       setShowPopup(false);
       setError("");
       fetchBrands();
     } catch (err) {
-      console.error("Lỗi khi lưu thương hiệu:", err);
+      console.error("❌ Lỗi khi lưu thương hiệu:", err);
       alert("Không thể lưu thương hiệu!");
     }
   };
 
-  // Xác định URL ảnh để hiển thị (giống logic form 1)
+  // ✅ Xử lý logo hiển thị
   const getLogoUrl = (brand) => {
-    if (brand.brandLogoUrl) {
-      return brand.brandLogoUrl;
-    }
+    if (brand.brandLogoUrl) return brand.brandLogoUrl;
     if (brand.brandLogoPath) {
-      if (brand.brandLogoPath.startsWith('http://') || brand.brandLogoPath.startsWith('https://')) {
-        return brand.brandLogoPath;
-      }
-      return brand.brandLogoPath.startsWith('/') ? brand.brandLogoPath : `/${brand.brandLogoPath}`;
+      if (brand.brandLogoPath.startsWith("http")) return brand.brandLogoPath;
+      return brand.brandLogoPath.startsWith("/")
+        ? brand.brandLogoPath
+        : `/${brand.brandLogoPath}`;
     }
     return null;
   };
@@ -186,51 +183,53 @@ export default function VehicleBrand() {
           </thead>
           <tbody>
             {brands.length > 0 ? (
-              brands.map((b) => {
-                const logoUrl = getLogoUrl(b);
-                return (
-                  <tr key={b.brandId}>
-                    <td>
-                      {logoUrl ? (
-                        <img
-                          src={logoUrl}
-                          alt={b.brandName}
-                          style={{ width: "60px", height: "40px", borderRadius: "6px", objectFit: "cover" }}
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>{b.brandName || "—"}</td>
-                    <td>{b.country || "—"}</td>
-                    <td>{b.foundedYear || "—"}</td>
-                    <td>
-                      <span
+              brands.map((b) => (
+                <tr key={b.brandId}>
+                  <td>
+                    {getLogoUrl(b) ? (
+                      <img
+                        src={getLogoUrl(b)}
+                        alt={b.brandName}
                         style={{
-                          background: b.isActive ? "#dcfce7" : "#fee2e2",
-                          color: b.isActive ? "#16a34a" : "#dc2626",
-                          padding: "5px 8px",
-                          borderRadius: "5px",
+                          width: "60px",
+                          height: "40px",
+                          borderRadius: "6px",
+                          objectFit: "cover",
                         }}
-                      >
-                        {b.isActive ? "Hoạt động" : "Ngừng"}
-                      </span>
-                    </td>
-                    <td className="action-buttons">
-                      <button className="icon-btn view" onClick={() => handleView(b)}>
-                        <FaEye />
-                      </button>
-                      <button className="icon-btn edit" onClick={() => handleEdit(b)}>
-                        <FaPen />
-                      </button>
-                      <button className="icon-btn delete" onClick={() => handleDelete(b.brandId)}>
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
+                        onError={(e) => (e.target.style.display = "none")}
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>{b.brandName || "—"}</td>
+                  <td>{b.country || "—"}</td>
+                  <td>{b.foundedYear || "—"}</td>
+                  <td>
+                    <span
+                      style={{
+                        background: b.isActive ? "#dcfce7" : "#fee2e2",
+                        color: b.isActive ? "#16a34a" : "#dc2626",
+                        padding: "5px 8px",
+                        borderRadius: "5px",
+                      }}
+                    >
+                      {b.isActive ? "Hoạt động" : "Ngừng"}
+                    </span>
+                  </td>
+                  <td className="action-buttons">
+                    <button className="icon-btn view" onClick={() => handleView(b)}>
+                      <FaEye />
+                    </button>
+                    <button className="icon-btn edit" onClick={() => handleEdit(b)}>
+                      <FaPen />
+                    </button>
+                    <button className="icon-btn delete" onClick={() => handleDelete(b.brandId)}>
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))
             ) : (
               <tr>
                 <td colSpan="6" style={{ textAlign: "center", color: "#666" }}>
@@ -242,94 +241,82 @@ export default function VehicleBrand() {
         </table>
       </div>
 
-      {/* ✅ Popup thêm/sửa */}
+      {/* Popup thêm/sửa */}
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
             <h2>{isEdit ? "Sửa thương hiệu" : "Thêm thương hiệu mới"}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-grid">
-                <input 
-                  name="brandName" 
-                  placeholder="Tên thương hiệu *" 
-                  value={formData.brandName} 
-                  onChange={(e) => setFormData({ ...formData, brandName: e.target.value })} 
-                  style={{color:'black'}} 
+                <input
+                  name="brandName"
+                  placeholder="Tên thương hiệu *"
+                  value={formData.brandName}
+                  onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
                   required
                 />
-                <input 
-                  name="country" 
-                  placeholder="Quốc gia *" 
-                  value={formData.country} 
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })} 
-                  style={{color:'black'}}
+                <input
+                  name="country"
+                  placeholder="Quốc gia *"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                   required
                 />
-                <input 
-                  name="foundedYear" 
-                  type="number" 
-                  placeholder="Năm thành lập" 
-                  value={formData.foundedYear} 
-                  onChange={(e) => setFormData({ ...formData, foundedYear: e.target.value })} 
-                  style={{color:'black'}}
-                  min="1800"
-                  max={new Date().getFullYear()}
+                <input
+                  name="foundedYear"
+                  type="number"
+                  placeholder="Năm thành lập"
+                  value={formData.foundedYear}
+                  onChange={(e) => setFormData({ ...formData, foundedYear: e.target.value })}
                 />
-                <input 
-                  name="brandLogoUrl" 
-                  placeholder="URL Logo" 
-                  value={formData.brandLogoUrl} 
-                  onChange={(e) => setFormData({ ...formData, brandLogoUrl: e.target.value })} 
-                  style={{color:'black'}}
+                <input
+                  name="brandLogoUrl"
+                  placeholder="URL Logo"
+                  value={formData.brandLogoUrl}
+                  onChange={(e) => setFormData({ ...formData, brandLogoUrl: e.target.value })}
                 />
-                <input 
-                  name="brandLogoPath" 
-                  placeholder="Đường dẫn file logo" 
-                  value={formData.brandLogoPath} 
-                  onChange={(e) => setFormData({ ...formData, brandLogoPath: e.target.value })} 
-                  style={{color:'black'}}
+                <input
+                  name="brandLogoPath"
+                  placeholder="Đường dẫn file logo"
+                  value={formData.brandLogoPath}
+                  onChange={(e) => setFormData({ ...formData, brandLogoPath: e.target.value })}
                 />
-                <label style={{display: 'flex', alignItems: 'center', gap: '8px', color: 'black'}}>
-                  <input 
-                    type="checkbox" 
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                   />
                   Đang hoạt động
                 </label>
               </div>
-
-              {error && <span className="error" style={{color: 'red', display: 'block', marginTop: '10px'}}>{error}</span>}
-
+              {error && <span className="error">{error}</span>}
               <div className="form-actions">
                 <button type="submit">{isEdit ? "Cập nhật" : "Tạo"}</button>
-                <button type="button" onClick={() => {
-                  setShowPopup(false);
-                  setError("");
-                }}>Hủy</button>
+                <button type="button" onClick={() => setShowPopup(false)}>
+                  Hủy
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ✅ Popup xem chi tiết */}
+      {/* Popup xem chi tiết */}
       {showDetail && selectedBrand && (
         <div className="popup-overlay">
           <div className="popup-box">
             <h2>Thông tin thương hiệu</h2>
             {getLogoUrl(selectedBrand) && (
-              <img src={getLogoUrl(selectedBrand)} alt="Logo" style={{ width: "120px", borderRadius: "10px", marginBottom: "15px" }} />
+              <img
+                src={getLogoUrl(selectedBrand)}
+                alt="Logo"
+                style={{ width: "120px", borderRadius: "10px", marginBottom: "15px" }}
+              />
             )}
             <p><b>Tên:</b> {selectedBrand.brandName || "—"}</p>
             <p><b>Quốc gia:</b> {selectedBrand.country || "—"}</p>
             <p><b>Năm thành lập:</b> {selectedBrand.foundedYear || "—"}</p>
-            {selectedBrand.brandLogoUrl && (
-              <p><b>URL Logo:</b> {selectedBrand.brandLogoUrl}</p>
-            )}
-            {selectedBrand.brandLogoPath && (
-              <p><b>Đường dẫn Logo:</b> {selectedBrand.brandLogoPath}</p>
-            )}
             <p><b>Trạng thái:</b> {selectedBrand.isActive ? "Hoạt động" : "Ngừng"}</p>
             <button className="btn-close" onClick={() => setShowDetail(false)}>Đóng</button>
           </div>

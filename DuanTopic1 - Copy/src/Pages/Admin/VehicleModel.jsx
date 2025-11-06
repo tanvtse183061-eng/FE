@@ -1,7 +1,8 @@
+// VehicleModel.jsx
 import './Customer.css';
 import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import API from '../Login/API';
+import { vehicleAPI } from "../../services/API";
 
 export default function VehicleModel() {
   const [models, setModels] = useState([]);
@@ -15,182 +16,154 @@ export default function VehicleModel() {
 
   const [formData, setFormData] = useState({
     modelName: "",
-    vehicleType: "",
-    bodyStyle: "",
-    seatingCapacity: "",
-    imageUrl: "",
+    vehicleType: "SEDAN",      // mặc định
     description: "",
-    notes: "",
-    brandId: "",
+    modelImageUrl: "",         // ví dụ: "/uploads/models/model3.jpg"
+    modelImagePath: "",        // ví dụ: "models/model3.jpg"
     isActive: true,
-    modelYear: "",
-    effectiveModelYear: "",
+    effectiveModelYear: 0,
+    brandId: "",
+    modelYear: new Date().getFullYear(),
+    year: new Date().getFullYear()
   });
 
-  // 🧭 Lấy danh sách brand và model
-  const fetchBrands = async () => {
-    try {
-      const res = await API.get("/api/vehicles/brands");
-      setBrands(res.data);
-    } catch (err) {
-      console.error("Lỗi lấy brand:", err);
-    }
-  };
+  // load models + brands
+  useEffect(() => {
+    fetchModels();
+    fetchBrands();
+  }, []);
 
   const fetchModels = async () => {
     try {
-      const res = await API.get("/api/vehicles/models");
-      setModels(res.data);
+      const res = await vehicleAPI.getModels();
+      setModels(res.data || []);
     } catch (err) {
-      console.error("Lỗi lấy model:", err);
+      console.error("Lỗi khi lấy danh sách dòng xe:", err);
     }
   };
 
-  useEffect(() => {
-    fetchBrands();
-    fetchModels();
-  }, []);
+  const fetchBrands = async () => {
+    try {
+      const res = await vehicleAPI.getBrands();
+      setBrands(res.data || []);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách hãng:", err);
+    }
+  };
 
-  // 🔍 Tìm kiếm
+  // tìm kiếm
   useEffect(() => {
     const delay = setTimeout(async () => {
-      const trimmed = searchTerm.trim();
-      if (trimmed === "") {
+      const q = searchTerm.trim();
+      if (!q) {
         fetchModels();
         return;
       }
       try {
-        const res = await API.get(`/api/vehicles/models/search?name=${encodeURIComponent(trimmed)}`);
-        setModels(res.data);
+        const res = await vehicleAPI.searchModels(q);
+        setModels(res.data || []);
       } catch (err) {
-        console.error("Lỗi tìm kiếm:", err);
+        console.error("Lỗi tìm kiếm dòng xe:", err);
       }
     }, 400);
     return () => clearTimeout(delay);
   }, [searchTerm]);
 
-  // 🧭 Mở popup thêm
-  const handleAdd = () => {
+  const handleOpenAdd = () => {
     setIsEdit(false);
+    setSelectedModel(null);
     setFormData({
       modelName: "",
-      vehicleType: "",
-      bodyStyle: "",
-      seatingCapacity: "",
-      imageUrl: "",
+      vehicleType: "SEDAN",
       description: "",
-      notes: "",
-      brandId: "",
+      modelImageUrl: "",
+      modelImagePath: "",
       isActive: true,
-      modelYear: "",
-      effectiveModelYear: "",
+      effectiveModelYear: 0,
+      brandId: "",
+      modelYear: new Date().getFullYear(),
+      year: new Date().getFullYear()
     });
+    setError("");
     setShowPopup(true);
   };
 
-  // 🧭 Sửa
   const handleEdit = (m) => {
     setIsEdit(true);
     setSelectedModel(m);
     setFormData({
       modelName: m.modelName || "",
-      vehicleType: m.vehicleType || "",
-      bodyStyle: m.bodyStyle || "",
-      seatingCapacity: m.seatingCapacity !== null && m.seatingCapacity !== undefined ? m.seatingCapacity : "",
-      imageUrl: m.imageUrl || "",
+      vehicleType: m.vehicleType || "SEDAN",
       description: m.description || "",
-      notes: m.notes || "",
-      brandId: m.brand?.brandId || "",
-      isActive: m.isActive !== undefined ? m.isActive : true,
-      modelYear: m.modelYear || "",
-      effectiveModelYear: m.effectiveModelYear || "",
+      modelImageUrl: m.modelImageUrl || "",
+      modelImagePath: m.modelImagePath || "",
+      isActive: m.isActive ?? true,
+      effectiveModelYear: m.effectiveModelYear ?? 0,
+      brandId: m.brand?.brandId ?? "",
+      modelYear: m.modelYear ?? (m.year ?? new Date().getFullYear()),
+      year: m.year ?? (m.modelYear ?? new Date().getFullYear())
     });
+    setError("");
     setShowPopup(true);
   };
 
-  // 🧭 Xóa
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa dòng xe này không?")) return;
-    try {
-      const response = await API.delete(`/api/vehicles/models/${id}`);
-      console.log("Delete response:", response);
-      
-      // Xóa khỏi state ngay lập tức
-      setModels(prevModels => prevModels.filter(m => m.modelId !== id));
-      
-      alert("Xóa thành công!");
-      
-      // Fetch lại để đảm bảo đồng bộ với server
-      await fetchModels();
-    } catch (err) {
-      console.error("Lỗi xóa:", err);
-      console.error("Error details:", err.response?.data);
-      alert("Không thể xóa dòng xe!");
-      // Fetch lại để restore nếu có lỗi
-      fetchModels();
-    }
-  };
-
-  // 🧭 Xem chi tiết
   const handleView = (m) => {
     setSelectedModel(m);
     setShowDetail(true);
   };
 
-  // 🧭 Submit form
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa dòng xe này không?")) return;
+    try {
+      await vehicleAPI.deleteModel(id);
+      alert("✅ Xóa thành công!");
+      fetchModels();
+    } catch (err) {
+      console.error("Lỗi khi xóa:", err);
+      const msg = err.response?.data?.message || err.message || "Không thể xóa dòng xe";
+      alert("Không thể xóa dòng xe: " + msg);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
+    // kiểm tra bắt buộc
     if (!formData.modelName || !formData.brandId) {
-      setError("Vui lòng nhập đầy đủ thông tin!");
+      setError("Vui lòng nhập đầy đủ: Tên dòng xe và Hãng.");
       return;
     }
 
-    if (!formData.seatingCapacity || formData.seatingCapacity === "") {
-      setError("Vui lòng nhập số chỗ ngồi!");
-      return;
-    }
-
+    // chuẩn hóa payload giống mẫu backend
     const payload = {
       modelName: formData.modelName,
-      vehicleType: formData.vehicleType || "",
-      bodyStyle: formData.bodyStyle || "",
-      seatingCapacity: Number(formData.seatingCapacity),
-      imageUrl: formData.imageUrl || "",
+      vehicleType: formData.vehicleType || null,
       description: formData.description || "",
-      notes: formData.notes || "",
+      modelImageUrl: formData.modelImageUrl || "",
+      modelImagePath: formData.modelImagePath || "",
+      isActive: formData.isActive ?? true,
+      effectiveModelYear: formData.effectiveModelYear ?? 0,
       brandId: Number(formData.brandId),
-      isActive: formData.isActive !== undefined ? formData.isActive : true,
       modelYear: formData.modelYear ? Number(formData.modelYear) : null,
-      effectiveModelYear: formData.effectiveModelYear ? Number(formData.effectiveModelYear) : null,
+      year: formData.year ? Number(formData.year) : (formData.modelYear ? Number(formData.modelYear) : null)
     };
 
-    console.log("Submitting payload:", payload);
-
     try {
-      let response;
       if (isEdit && selectedModel) {
-        response = await API.put(`/api/vehicles/models/${selectedModel.modelId}`, payload);
-        console.log("Update response:", response);
-        alert("Cập nhật thành công!");
+        await vehicleAPI.updateModel(selectedModel.modelId, payload);
+        alert("✅ Cập nhật dòng xe thành công!");
       } else {
-        response = await API.post("/api/vehicles/models", payload);
-        console.log("Create response:", response);
-        alert("Thêm mới thành công!");
+        await vehicleAPI.createModel(payload);
+        alert("✅ Thêm dòng xe thành công!");
       }
-      
       setShowPopup(false);
-      setError("");
-      
-      // Đợi một chút trước khi fetch để đảm bảo server đã lưu xong
-      setTimeout(() => {
-        fetchModels();
-      }, 300);
-      
+      fetchModels();
     } catch (err) {
       console.error("Lỗi khi lưu:", err);
-      console.error("Error response:", err.response?.data);
-      alert("Không thể lưu dòng xe! " + (err.response?.data?.message || err.message));
+      const msg = err.response?.data?.message || JSON.stringify(err.response?.data) || err.message;
+      setError("Lưu thất bại: " + msg);
+      alert("Lưu thất bại: " + msg);
     }
   };
 
@@ -200,7 +173,7 @@ export default function VehicleModel() {
 
       <div className="title2-customer">
         <h2>Danh sách dòng xe</h2>
-        <h3 onClick={handleAdd}><FaPlus /> Thêm dòng xe</h3>
+        <h3 onClick={handleOpenAdd}><FaPlus /> Thêm dòng xe</h3>
       </div>
 
       <div className="title3-customer">
@@ -208,63 +181,51 @@ export default function VehicleModel() {
         <input
           type="text"
           placeholder="Tìm kiếm dòng xe..."
-          className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
         />
       </div>
 
-      {/* Danh sách dòng xe */}
       <div className="customer-table-container">
         <table className="customer-table">
           <thead>
             <tr>
-              <th>ẢNH</th>
-              <th>TÊN DÒNG XE</th>
-              <th>THƯƠNG HIỆU</th>
-              <th>KIỂU XE</th>
-              <th>SỐ CHỖ</th>
-              <th>TRẠNG THÁI</th>
-              <th>THAO TÁC</th>
+              <th>Tên dòng xe</th>
+              <th>Hãng xe</th>
+              <th>Mô tả</th>
+              <th>Năm</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {models.length > 0 ? (
               models.map((m) => (
                 <tr key={m.modelId}>
-                  <td>
-                    {m.imageUrl ? (
-                      <img 
-                        src={m.imageUrl} 
-                        alt="" 
-                        style={{ width: "70px", height: "50px", borderRadius: "6px", objectFit: "cover" }} 
-                        onError={(e) => { e.target.style.display = 'none'; }}
-                      />
-                    ) : "—"}
-                  </td>
                   <td>{m.modelName}</td>
-                  <td>{m.brand?.brandName}</td>
-                  <td>{m.vehicleType}</td>
-                  <td>{m.seatingCapacity}</td>
+                  <td>{m.brand?.brandName || "—"}</td>
+                  <td>{m.description || "—"}</td>
+                  <td>{m.modelYear || m.year || "—"}</td>
                   <td>
                     <span style={{
                       background: m.isActive ? "#dcfce7" : "#fee2e2",
                       color: m.isActive ? "#16a34a" : "#dc2626",
-                      padding: "5px 8px",
-                      borderRadius: "5px",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
                     }}>
                       {m.isActive ? "Hoạt động" : "Ngừng"}
                     </span>
                   </td>
                   <td className="action-buttons">
-                    <button className="icon-btn view" onClick={() => handleView(m)}><FaEye /></button>
-                    <button className="icon-btn edit" onClick={() => handleEdit(m)}><FaPen /></button>
-                    <button className="icon-btn delete" onClick={() => handleDelete(m.modelId)}><FaTrash /></button>
+                    <button onClick={() => handleView(m)} className="icon-btn view"><FaEye /></button>
+                    <button onClick={() => handleEdit(m)} className="icon-btn edit"><FaPen /></button>
+                    <button onClick={() => handleDelete(m.modelId)} className="icon-btn delete"><FaTrash /></button>
                   </td>
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="7" style={{ textAlign: "center", color: "#666" }}>Không có dữ liệu dòng xe</td></tr>
+              <tr><td colSpan="6" style={{ textAlign: "center" }}>Không có dữ liệu</td></tr>
             )}
           </tbody>
         </table>
@@ -272,109 +233,98 @@ export default function VehicleModel() {
 
       {/* Popup thêm/sửa */}
       {showPopup && (
-        <div className="popup-overlay">
+        <div className="popup-overlay" onClick={(e) => { if (e.target.className === 'popup-overlay') setShowPopup(false); }}>
           <div className="popup-box">
-            <h2>{isEdit ? "Sửa dòng xe" : "Thêm dòng xe mới"}</h2>
+            <h2>{isEdit ? "Sửa dòng xe" : "Thêm dòng xe"}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-grid">
-                <select 
-                  value={formData.brandId} 
+                <input
+                  name="modelName"
+                  placeholder="Tên dòng xe *"
+                  value={formData.modelName}
+                  onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
+                  required
+                />
+
+                <select
+                  name="brandId"
+                  value={formData.brandId}
                   onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
                   required
-                  style={{color:'black'}}
                 >
-                  <option value="">-- Chọn thương hiệu --</option>
+                  <option value="">-- Chọn hãng xe --</option>
                   {brands.map((b) => (
                     <option key={b.brandId} value={b.brandId}>{b.brandName}</option>
                   ))}
                 </select>
-                <input 
-                  name="modelName" 
-                  placeholder="Tên dòng xe *" 
-                  value={formData.modelName} 
-                  onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}  
-                  style={{color:'black'}}
-                  required
+
+                <select
+                  name="vehicleType"
+                  value={formData.vehicleType}
+                  onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
+                >
+                  <option value="SEDAN">Sedan</option>
+                  <option value="SUV">SUV</option>
+                  <option value="HATCHBACK">Hatchback</option>
+                  <option value="MPV">MPV</option>
+                  <option value="PICKUP">Pickup</option>
+                  <option value="COUPE">Coupe</option>
+                  <option value="CONVERTIBLE">Convertible</option>
+                </select>
+
+                <input
+                  name="modelYear"
+                  type="number"
+                  placeholder="Năm sản xuất"
+                  value={formData.modelYear}
+                  onChange={(e) => setFormData({ ...formData, modelYear: e.target.value, year: e.target.value })}
                 />
-                <input 
-                  name="vehicleType" 
-                  placeholder="Kiểu xe" 
-                  value={formData.vehicleType} 
-                  onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })} 
-                  style={{color:'black'}}
+
+                <input
+                  name="effectiveModelYear"
+                  type="number"
+                  placeholder="Năm hiệu lực (effectiveModelYear)"
+                  value={formData.effectiveModelYear}
+                  onChange={(e) => setFormData({ ...formData, effectiveModelYear: Number(e.target.value) })}
                 />
-                <input 
-                  name="bodyStyle" 
-                  placeholder="Body Style" 
-                  value={formData.bodyStyle} 
-                  onChange={(e) => setFormData({ ...formData, bodyStyle: e.target.value })} 
-                  style={{color:'black'}}
+
+                <input
+                  name="modelImageUrl"
+                  placeholder="URL ảnh (modelImageUrl)"
+                  value={formData.modelImageUrl}
+                  onChange={(e) => setFormData({ ...formData, modelImageUrl: e.target.value })}
                 />
-                <input 
-                  type="number" 
-                  name="seatingCapacity" 
-                  placeholder="Số chỗ *" 
-                  value={formData.seatingCapacity} 
-                  onChange={(e) => setFormData({ ...formData, seatingCapacity: e.target.value })} 
-                  style={{color:'black'}}
-                  required
-                  min="1"
+
+                <input
+                  name="modelImagePath"
+                  placeholder="Đường dẫn file (modelImagePath)"
+                  value={formData.modelImagePath}
+                  onChange={(e) => setFormData({ ...formData, modelImagePath: e.target.value })}
                 />
-                <input 
-                  name="imageUrl" 
-                  placeholder="Ảnh (URL)" 
-                  value={formData.imageUrl} 
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} 
-                  style={{color:'black'}}
-                />
-                <input 
-                  name="modelYear" 
-                  type="number" 
-                  placeholder="Năm sản xuất" 
-                  value={formData.modelYear} 
-                  onChange={(e) => setFormData({ ...formData, modelYear: e.target.value })} 
-                  style={{color:'black'}}
-                />
-                <input 
-                  name="effectiveModelYear" 
-                  type="number" 
-                  placeholder="Năm hiệu lực" 
-                  value={formData.effectiveModelYear} 
-                  onChange={(e) => setFormData({ ...formData, effectiveModelYear: e.target.value })} 
-                  style={{color:'black'}}
-                />
-                <textarea 
-                  name="description" 
-                  placeholder="Mô tả" 
-                  value={formData.description} 
+
+                <textarea
+                  name="description"
+                  placeholder="Mô tả"
+                  value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  style={{color:'black'}}
-                ></textarea>
-                <textarea 
-                  name="notes" 
-                  placeholder="Ghi chú" 
-                  value={formData.notes} 
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  style={{color:'black'}}
-                ></textarea>
-                <label style={{display: 'flex', alignItems: 'center', gap: '8px', color: 'black'}}>
-                  <input 
-                    type="checkbox" 
+                  style={{ gridColumn: '1 / -1' }}
+                />
+
+                <label style={{ gridColumn: '1 / -1' }}>
+                  <input
+                    type="checkbox"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  />
+                  />{" "}
                   Đang hoạt động
                 </label>
               </div>
 
-              {error && <span className="error" style={{color: 'red', display: 'block', marginTop: '10px'}}>{error}</span>}
+              {error && <div className="error" style={{ color: 'red', marginTop: 8 }}>{error}</div>}
 
               <div className="form-actions">
-                <button type="submit">{isEdit ? "Cập nhật" : "Tạo"}</button>
-                <button type="button" onClick={() => {
-                  setShowPopup(false);
-                  setError("");
-                }}>Hủy</button>
+                <button type="submit">{isEdit ? "Cập nhật" : "Tạo mới"}</button>
+                <button type="button" onClick={() => setShowPopup(false)}>Hủy</button>
               </div>
             </form>
           </div>
@@ -383,35 +333,18 @@ export default function VehicleModel() {
 
       {/* Popup xem chi tiết */}
       {showDetail && selectedModel && (
-        <div className="popup-overlay">
+        <div className="popup-overlay" onClick={(e) => { if (e.target.className === 'popup-overlay') setShowDetail(false); }}>
           <div className="popup-box">
             <h2>Chi tiết dòng xe</h2>
-            {selectedModel.imageUrl && (
-              <img src={selectedModel.imageUrl} alt="Ảnh xe" style={{ width: "120px", borderRadius: "10px", marginBottom: "15px" }} />
-            )}
             <p><b>Tên:</b> {selectedModel.modelName}</p>
-            <p><b>Thương hiệu:</b> {selectedModel.brand?.brandName}</p>
-            {selectedModel.vehicleType && (
-              <p><b>Kiểu xe:</b> {selectedModel.vehicleType}</p>
-            )}
-            {selectedModel.bodyStyle && (
-              <p><b>Body Style:</b> {selectedModel.bodyStyle}</p>
-            )}
-            <p><b>Số chỗ:</b> {selectedModel.seatingCapacity}</p>
-            {selectedModel.modelYear && (
-              <p><b>Năm sản xuất:</b> {selectedModel.modelYear}</p>
-            )}
-            {selectedModel.effectiveModelYear && (
-              <p><b>Năm hiệu lực:</b> {selectedModel.effectiveModelYear}</p>
-            )}
-            {selectedModel.description && (
-              <p><b>Mô tả:</b> {selectedModel.description}</p>
-            )}
-            {selectedModel.notes && (
-              <p><b>Ghi chú:</b> {selectedModel.notes}</p>
-            )}
+            <p><b>Hãng:</b> {selectedModel.brand?.brandName || "—"}</p>
+            <p><b>Vehicle Type:</b> {selectedModel.vehicleType || "—"}</p>
+            <p><b>Năm:</b> {selectedModel.modelYear || selectedModel.year || "—"}</p>
+            <p><b>Effective Model Year:</b> {selectedModel.effectiveModelYear ?? 0}</p>
+            <p><b>Mô tả:</b> {selectedModel.description || "—"}</p>
+            <p><b>Ảnh:</b> {selectedModel.modelImageUrl || selectedModel.modelImagePath || "—"}</p>
             <p><b>Trạng thái:</b> {selectedModel.isActive ? "Hoạt động" : "Ngừng"}</p>
-            <button className="btn-close" onClick={() => setShowDetail(false)}>Đóng</button>
+            <button onClick={() => setShowDetail(false)}>Đóng</button>
           </div>
         </div>
       )}

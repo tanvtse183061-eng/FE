@@ -1,6 +1,5 @@
 import { FaSearch, FaEye, FaPen, FaTrash } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import API from "../Login/API";
 import "./Customer.css"; // dùng lại style có sẵn
 
 export default function Cardelivery() {
