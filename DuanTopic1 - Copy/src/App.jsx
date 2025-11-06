@@ -11,6 +11,13 @@ import Order from './Pages/Admin/Order';
 import Cardelivery from './Pages/Admin/Cardelivery';
 import Paymentcustomer from './Pages/Admin/Paymentcustomer';
 import HerioGreen from './components/CarSection/HerioGreen';
+import Limo from './components/CarSection/Limo';
+import Minio from './components/CarSection/Minio';
+import Vinfast3 from './components/CarSection/Vinfast3';
+import Vinfast6 from './components/CarSection/Vinfast6';
+import Vinfast7 from './components/CarSection/Vinfast7';
+import Macan from './components/CarSection/Macan';
+import Macan4 from './components/CarSection/Macan4';
 import VehicleBrand from './Pages/Admin/VehicleBrand';
 import VehicleModel from './Pages/Admin/VehicleModel';
 import VehicleVariant from './Pages/Admin/VehicleVariant';
@@ -26,6 +33,13 @@ function App() {
      
         <Routes>
           <Route path="/heriogreen" element={<HerioGreen />} />
+          <Route path="/limo" element={<Limo />} />
+          <Route path="/minio" element={<Minio />} />
+          <Route path="/vinfast3" element={<Vinfast3 />} />
+          <Route path="/vinfast6" element={<Vinfast6 />} />
+          <Route path="/vinfast7" element={<Vinfast7 />} />
+          <Route path="/macan" element={<Macan />} />
+          <Route path="/macan4" element={<Macan4 />} />
           <Route path="/login" element={<Login />} />
           
           <Route path="/" element={
