@@ -252,7 +252,7 @@ export default function VehicleVariant() {
                   <td>{v.model?.modelName ?? "—"}</td>
                   <td>{v.topSpeed ?? "—"} km/h</td>
                   <td>{v.batteryCapacity ?? "—"} kWh</td>
-                  <td>{formatPrice(v.basePrice)}</td>
+                  <td>{v.priceBase}</td>
                   <td>
                     <span
                       style={{
@@ -333,7 +333,7 @@ export default function VehicleVariant() {
                   type="number"
                   placeholder="Giá cơ bản (VNĐ)"
                   value={formData.priceBase}
-                  onChange={(e) => setFormData({ ...formData, priceBase: e.target.value })}
+                  onChange={(e) =>setFormData({ ...formData, priceBase: e.target.value })}
                 />
 
                 <input

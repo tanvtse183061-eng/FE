@@ -256,7 +256,8 @@ export default function Dealer() {
             <p><b>Email:</b> {selectedDealer.email}</p>
             <p><b>Địa chỉ:</b> {selectedDealer.address}, {selectedDealer.city}, {selectedDealer.province}</p>
             <p><b>Loại:</b> {selectedDealer.dealerType}</p>
-            <p><b>Ngân hàng:</b> {selectedDealer.bankName} - {selectedDealer.bankAccount}</p>
+            <p><b>Ngân hàng:</b> {selectedDealer.bankName} </p>
+             <p><b>Số tiền:</b> {selectedDealer.bankAccount} </p>
             <p><b>Hoa hồng:</b> {selectedDealer.commissionRate}%</p>
             <p><b>Trạng thái:</b> {selectedDealer.status}</p>
             <p><b>Ghi chú:</b> {selectedDealer.notes}</p>

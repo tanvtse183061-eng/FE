@@ -1,7 +1,7 @@
 import "./Customer.css";
 import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import { customerAPI } from "../../services/API"; // ✅ Dùng API riêng đã tách
+import { customerAPI } from "../../services/API"; // ✅ API riêng
 
 export default function Customer() {
   const [customers, setCustomers] = useState([]);
@@ -12,7 +12,7 @@ export default function Customer() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [errors, setErrors] = useState({});
 
-  // ✅ Form khách hàng
+  // ✅ Form khách hàng (đồng bộ Dashboard)
   const [customerForm, setCustomerForm] = useState({
     firstName: "",
     lastName: "",
@@ -41,6 +41,16 @@ export default function Customer() {
 
   useEffect(() => {
     fetchCustomers();
+  }, []);
+
+  // 🔄 Lắng nghe event từ Dashboard
+  useEffect(() => {
+    const handleCustomerAdded = () => {
+      console.log("🔄 Có khách hàng mới từ Dashboard, đang tải lại...");
+      fetchCustomers();
+    };
+    window.addEventListener("customerAdded", handleCustomerAdded);
+    return () => window.removeEventListener("customerAdded", handleCustomerAdded);
   }, []);
 
   // 🔍 Tìm kiếm
@@ -124,7 +134,7 @@ export default function Customer() {
     }
   };
 
-  // 📝 Xử lý nhập liệu
+  // 📝 Nhập liệu form
   const handleChange = (e) => {
     setCustomerForm({ ...customerForm, [e.target.name]: e.target.value });
     if (errors[e.target.name]) {
@@ -132,7 +142,7 @@ export default function Customer() {
     }
   };
 
-  // ✅ Kiểm tra lỗi form
+  // ✅ Kiểm tra lỗi
   const validate = () => {
     let newErrors = {};
     if (!customerForm.firstName.trim()) newErrors.firstName = "Vui lòng nhập họ.";
@@ -141,8 +151,6 @@ export default function Customer() {
     else if (!/\S+@\S+\.\S+/.test(customerForm.email)) newErrors.email = "Email không hợp lệ.";
     if (!customerForm.phone.trim()) newErrors.phone = "Vui lòng nhập số điện thoại.";
     else if (!/^[0-9]{9,11}$/.test(customerForm.phone)) newErrors.phone = "Số điện thoại không hợp lệ.";
-    if (!customerForm.creditScore || isNaN(customerForm.creditScore))
-      newErrors.creditScore = "Vui lòng nhập điểm tín dụng hợp lệ.";
     return newErrors;
   };
 
@@ -243,7 +251,7 @@ export default function Customer() {
         </table>
       </div>
 
-      {/* Popup thêm/sửa */}
+      {/* Popup thêm/sửa khách hàng */}
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
@@ -257,7 +265,7 @@ export default function Customer() {
                 <input type="date" name="dateOfBirth" value={customerForm.dateOfBirth} onChange={handleChange} />
                 <input name="address" placeholder="Địa chỉ" value={customerForm.address} onChange={handleChange} />
                 <input name="city" placeholder="Thành phố" value={customerForm.city} onChange={handleChange} />
-                <input name="province" placeholder="Tỉnh / Thành phố" value={customerForm.province} onChange={handleChange} />
+                <input name="province" placeholder="Tỉnh" value={customerForm.province} onChange={handleChange} />
                 <input name="postalCode" placeholder="Mã bưu điện" value={customerForm.postalCode} onChange={handleChange} />
                 <select name="preferredContactMethod" value={customerForm.preferredContactMethod} onChange={handleChange}>
                   <option value="">-- Liên hệ qua --</option>

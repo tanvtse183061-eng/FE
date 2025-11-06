@@ -17,7 +17,7 @@ import {
   customerAPI,
   orderAPI,
   warehouseAPI,
-} from "../../services/API.js"; // 👉 Đúng với file bạn có
+} from "../../services/API.js"; 
 
 export default function Dashboard() {
   // ------------------ STATE ------------------
@@ -37,16 +37,19 @@ export default function Dashboard() {
     totalAmount: '',
   });
 
-  // Form khách hàng
+  // Form khách hàng (đầy đủ giống Customer.jsx)
   const [customer, setCustomer] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    dateOfBirth: '',
     address: '',
     city: '',
+    province: '',
     postalCode: '',
     preferredContactMethod: '',
+    creditScore: 750,
     notes: '',
   });
 
@@ -67,9 +70,7 @@ export default function Dashboard() {
         const pending = orders.data.filter(o => o.status === 'PENDING');
         setPendingCount(pending.length);
 
-        const recent = orders.data
-          .sort((a, b) => b.id - a.id)
-          .slice(0, 2);
+        const recent = orders.data.sort((a, b) => b.id - a.id).slice(0, 2);
         setRecentOrders(recent);
       } catch (err) {
         console.error('❌ Lỗi khi tải dữ liệu dashboard:', err);
@@ -80,17 +81,6 @@ export default function Dashboard() {
   }, []);
 
   // ------------------ VALIDATE ------------------
-  const validateQuotation = () => {
-    const e = {};
-    if (!quotation.quotationNumber.trim()) e.quotationNumber = 'Số báo giá bắt buộc';
-    if (!quotation.customerId.trim()) e.customerId = 'Chưa nhập ID khách hàng';
-    if (!quotation.userId.trim()) e.userId = 'Chưa nhập ID nhân viên';
-    if (!quotation.totalAmount.trim() || isNaN(quotation.totalAmount))
-      e.totalAmount = 'Tổng tiền phải là số';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
   const validateCustomer = () => {
     const e = {};
     if (!customer.firstName.trim()) e.firstName = 'Họ không được trống';
@@ -98,25 +88,12 @@ export default function Dashboard() {
     if (!customer.email.trim()) e.email = 'Email bắt buộc';
     if (!customer.phone.trim()) e.phone = 'SĐT bắt buộc';
     if (!customer.city.trim()) e.city = 'Thành phố bắt buộc';
+    if (!customer.province.trim()) e.province = 'Tỉnh bắt buộc';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   // ------------------ HANDLE SUBMIT ------------------
-  const handleSubmitQuotation = async (e) => {
-    e.preventDefault();
-    if (!validateQuotation()) return;
-    try {
-      await orderAPI.createOrder(quotation);
-      alert('✅ Tạo báo giá thành công!');
-      setSelectedAction(null);
-      setQuotation({ quotationNumber: '', customerId: '', userId: '', totalAmount: '' });
-    } catch (err) {
-      console.error('❌ Lỗi tạo báo giá:', err);
-      alert('Tạo báo giá thất bại!');
-    }
-  };
-
   const handleSubmitCustomer = async (e) => {
     e.preventDefault();
     if (!validateCustomer()) return;
@@ -129,15 +106,43 @@ export default function Dashboard() {
         lastName: '',
         email: '',
         phone: '',
+        dateOfBirth: '',
         address: '',
         city: '',
+        province: '',
         postalCode: '',
         preferredContactMethod: '',
+        creditScore: 750,
         notes: '',
       });
+
+      // 🔄 Gửi event cho trang Customer.jsx reload danh sách
+      window.dispatchEvent(new Event("customerAdded"));
     } catch (err) {
       console.error('❌ Lỗi thêm khách hàng:', err);
       alert('Thêm khách hàng thất bại!');
+    }
+  };
+
+  const handleSubmitQuotation = async (e) => {
+    e.preventDefault();
+    if (!quotation.quotationNumber || !quotation.customerId || !quotation.userId || !quotation.totalAmount) {
+      alert('Vui lòng nhập đầy đủ thông tin báo giá!');
+      return;
+    }
+    try {
+      await orderAPI.createOrder(quotation);
+      alert('✅ Tạo báo giá thành công!');
+      setSelectedAction(null);
+      setQuotation({
+        quotationNumber: '',
+        customerId: '',
+        userId: '',
+        totalAmount: '',
+      });
+    } catch (err) {
+      console.error('❌ Lỗi tạo báo giá:', err);
+      alert('Tạo báo giá thất bại!');
     }
   };
 
@@ -175,10 +180,9 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Thông báo */}
+        {/* Notice */}
         <div className="important-notice">
-          <FontAwesomeIcon icon={faCircleExclamation} color="red" />{' '}
-          {pendingCount} đơn hàng đang chờ xử lý
+          <FontAwesomeIcon icon={faCircleExclamation} color="red" /> {pendingCount} đơn hàng đang chờ xử lý
         </div>
 
         {/* Quick actions */}
@@ -225,16 +229,13 @@ export default function Dashboard() {
           <div className="popup" onClick={(e) => e.stopPropagation()}>
             <h3>{selectedAction}</h3>
 
+            {/* Form báo giá */}
             {selectedAction === 'Tạo báo giá mới' && (
               <form onSubmit={handleSubmitQuotation}>
                 <input name="quotationNumber" placeholder="Số báo giá" value={quotation.quotationNumber} onChange={(e) => setQuotation({ ...quotation, quotationNumber: e.target.value })} />
-                {errors.quotationNumber && <p style={{ color: 'red' }}>{errors.quotationNumber}</p>}
                 <input name="customerId" placeholder="ID khách hàng" value={quotation.customerId} onChange={(e) => setQuotation({ ...quotation, customerId: e.target.value })} />
-                {errors.customerId && <p style={{ color: 'red' }}>{errors.customerId}</p>}
                 <input name="userId" placeholder="ID nhân viên" value={quotation.userId} onChange={(e) => setQuotation({ ...quotation, userId: e.target.value })} />
-                {errors.userId && <p style={{ color: 'red' }}>{errors.userId}</p>}
                 <input name="totalAmount" placeholder="Tổng tiền" value={quotation.totalAmount} onChange={(e) => setQuotation({ ...quotation, totalAmount: e.target.value })} />
-                {errors.totalAmount && <p style={{ color: 'red' }}>{errors.totalAmount}</p>}
                 <div className="form-actions">
                   <button type="submit">Tạo</button>
                   <button type="button" onClick={() => setSelectedAction(null)}>Hủy</button>
@@ -242,19 +243,27 @@ export default function Dashboard() {
               </form>
             )}
 
+            {/* Form khách hàng */}
             {selectedAction === 'Thêm khách hàng' && (
               <form onSubmit={handleSubmitCustomer}>
                 <input name="firstName" placeholder="Họ" value={customer.firstName} onChange={(e) => setCustomer({ ...customer, firstName: e.target.value })} />
-                {errors.firstName && <p style={{ color: 'red' }}>{errors.firstName}</p>}
                 <input name="lastName" placeholder="Tên" value={customer.lastName} onChange={(e) => setCustomer({ ...customer, lastName: e.target.value })} />
-                {errors.lastName && <p style={{ color: 'red' }}>{errors.lastName}</p>}
-                <input name="email" placeholder="Email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
-                {errors.email && <p style={{ color: 'red' }}>{errors.email}</p>}
+                <input type="email" name="email" placeholder="Email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
                 <input name="phone" placeholder="Số điện thoại" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
-                {errors.phone && <p style={{ color: 'red' }}>{errors.phone}</p>}
+                <input type="date" name="dateOfBirth" value={customer.dateOfBirth} onChange={(e) => setCustomer({ ...customer, dateOfBirth: e.target.value })} />
+                <input name="address" placeholder="Địa chỉ" value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} />
                 <input name="city" placeholder="Thành phố" value={customer.city} onChange={(e) => setCustomer({ ...customer, city: e.target.value })} />
-                {errors.city && <p style={{ color: 'red' }}>{errors.city}</p>}
-                <textarea name="notes" placeholder="Ghi chú" value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })} />
+                <input name="province" placeholder="Tỉnh" value={customer.province} onChange={(e) => setCustomer({ ...customer, province: e.target.value })} />
+                <input name="postalCode" placeholder="Mã bưu điện" value={customer.postalCode} onChange={(e) => setCustomer({ ...customer, postalCode: e.target.value })} />
+                <select name="preferredContactMethod" value={customer.preferredContactMethod} onChange={(e) => setCustomer({ ...customer, preferredContactMethod: e.target.value })}>
+                  <option value="">-- Liên hệ qua --</option>
+                  <option value="email">Email</option>
+                  <option value="sms">SMS</option>
+                  <option value="phone">Điện thoại</option>
+                </select>
+                <input type="number" name="creditScore" placeholder="Điểm tín dụng" value={customer.creditScore} onChange={(e) => setCustomer({ ...customer, creditScore: e.target.value })} />
+                <textarea name="notes" placeholder="Ghi chú" value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })}></textarea>
+
                 <div className="form-actions">
                   <button type="submit">Tạo</button>
                   <button type="button" onClick={() => setSelectedAction(null)}>Hủy</button>
