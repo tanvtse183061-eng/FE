@@ -90,20 +90,27 @@ export default function Login() {
         localStorage.setItem("username", data.username);
         localStorage.setItem("role", data.role);
 
+        console.log("✅ Role từ login response:", data.role);
+        console.log("✅ Username:", data.username);
+        
         alert("Đăng nhập thành công!");
         
         // Redirect theo role
         const role = data.role;
+        console.log("🔄 Redirect theo role:", role);
+        
         if (role === "ADMIN") {
           navigate("/admin");
         } else if (role === "EVM_STAFF") {
           navigate("/evmstaff");
         } else if (role === "MANAGER") {
           navigate("/dealermanager");
-        } else if (role === "STAFF") {
+        } else if (role === "STAFF" || role === "DEALER_STAFF") {
+          // Xử lý cả STAFF và DEALER_STAFF
           navigate("/dealerstaff");
         } else {
-          // Default fallback
+          // Default fallback - nếu role không khớp, thử redirect theo role name
+          console.warn("⚠️ Role không khớp, dùng fallback:", role);
           navigate("/dealerstaff");
         }
       } else {
@@ -111,12 +118,25 @@ export default function Login() {
       }
     } catch (err) {
       console.error("❌ Login error:", err);
+      console.error("❌ Error response:", err.response?.data);
+      console.error("❌ Error status:", err.response?.status);
+      
       if (err.response) {
-        alert(
-          `Lỗi đăng nhập: ${err.response.status}\n${JSON.stringify(
-            err.response.data
-          )}`
-        );
+        const status = err.response.status;
+        const errorData = err.response.data;
+        let errorMessage = `Lỗi đăng nhập: ${status}`;
+        
+        if (errorData?.error) {
+          errorMessage += `\n${errorData.error}`;
+        } else if (errorData?.message) {
+          errorMessage += `\n${errorData.message}`;
+        } else if (typeof errorData === 'string') {
+          errorMessage += `\n${errorData}`;
+        } else {
+          errorMessage += `\n${JSON.stringify(errorData)}`;
+        }
+        
+        alert(errorMessage);
       } else if (err.request) {
         alert(
           "❌ Không thể kết nối tới backend.\nHãy chắc rằng Spring Boot đang chạy tại http://localhost:8080"

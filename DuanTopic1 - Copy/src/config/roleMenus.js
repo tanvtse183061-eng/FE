@@ -164,6 +164,7 @@ const dealerMenuItems = [
 
 // Function để lấy menu items theo role
 export const getMenuItemsByRole = (role) => {
+  console.log("🔍 getMenuItemsByRole - role:", role);
   switch (role) {
     case "ADMIN":
       return adminMenuItems;
@@ -171,8 +172,10 @@ export const getMenuItemsByRole = (role) => {
       return evmStaffMenuItems;
     case "MANAGER":
     case "STAFF":
+    case "DEALER_STAFF": // Xử lý cả DEALER_STAFF
       return dealerMenuItems;
     default:
+      console.warn("⚠️ Role không khớp, trả về menu rỗng:", role);
       return [];
   }
 };

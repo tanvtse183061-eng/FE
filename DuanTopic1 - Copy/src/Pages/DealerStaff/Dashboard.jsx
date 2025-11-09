@@ -27,23 +27,40 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [orders, customers, warehouses] = await Promise.all([
-          orderAPI.getOrders(),
-          customerAPI.getCustomers(),
-          warehouseAPI.getWarehouses(),
+        // Fetch orders và customers (dealer staff có quyền)
+        const [orders, customers] = await Promise.all([
+          orderAPI.getOrders().catch(err => {
+            console.warn("⚠️ Không thể lấy orders:", err);
+            return { data: [] };
+          }),
+          customerAPI.getCustomers().catch(err => {
+            console.warn("⚠️ Không thể lấy customers:", err);
+            return { data: [] };
+          }),
         ]);
 
-        setOrderCount(orders.data.length);
-        setCustomerCount(customers.data.length);
-        setVehicleCount(warehouses.data.length);
+        setOrderCount(orders.data?.length || 0);
+        setCustomerCount(customers.data?.length || 0);
 
-        const pending = orders.data.filter(o => o.status === 'PENDING');
+        // Dealer staff có thể không có quyền truy cập warehouses
+        // Nên không fetch warehouses, hoặc fetch với error handling
+        try {
+          const warehouses = await warehouseAPI.getWarehouses();
+          setVehicleCount(warehouses.data?.length || 0);
+        } catch (warehouseErr) {
+          console.warn("⚠️ Không thể lấy warehouses (có thể không có quyền):", warehouseErr);
+          setVehicleCount(0); // Set mặc định 0 nếu không có quyền
+        }
+
+        const pending = (orders.data || []).filter(o => o.status === 'PENDING');
         setPendingCount(pending.length);
 
-        const recent = orders.data.sort((a, b) => b.id - a.id).slice(0, 2);
+        const recent = (orders.data || []).sort((a, b) => (b.id || b.orderId || 0) - (a.id || a.orderId || 0)).slice(0, 2);
         setRecentOrders(recent);
       } catch (err) {
         console.error('❌ Lỗi khi tải dữ liệu dashboard:', err);
+        console.error('❌ Error response:', err.response?.data);
+        console.error('❌ Error status:', err.response?.status);
       }
     };
 

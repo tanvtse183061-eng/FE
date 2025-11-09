@@ -29,9 +29,13 @@ const [selectedAction, setSelectedAction] = useState(null);
     const savedUser = localStorage.getItem("username");
     const savedRole = localStorage.getItem("role");
     
+    console.log("🔍 DealerStaff - savedRole:", savedRole);
+    console.log("🔍 DealerStaff - savedUser:", savedUser);
+    
     if (savedUser && savedRole) {
       // Kiểm tra role có đúng với route không
-      if (savedRole !== "STAFF") {
+      // Cho phép cả "STAFF" và "DEALER_STAFF"
+      if (savedRole !== "STAFF" && savedRole !== "DEALER_STAFF") {
         // Redirect về đúng route theo role
         if (savedRole === "ADMIN") {
           navigate("/admin");
@@ -40,6 +44,7 @@ const [selectedAction, setSelectedAction] = useState(null);
         } else if (savedRole === "MANAGER") {
           navigate("/dealermanager");
         } else {
+          console.warn("⚠️ Role không hợp lệ, redirect về login:", savedRole);
           navigate("/login");
         }
         return;
@@ -47,8 +52,11 @@ const [selectedAction, setSelectedAction] = useState(null);
       
       setUsername(savedUser);
       setUserRole(savedRole);
-      setMenuItems(getMenuItemsByRole(savedRole));
+      const menuItemsForRole = getMenuItemsByRole(savedRole);
+      console.log("✅ Menu items cho role:", savedRole, menuItemsForRole);
+      setMenuItems(menuItemsForRole);
     } else {
+      console.warn("⚠️ Không có user hoặc role, redirect về login");
       navigate("/login");
     }
   }, [navigate]);
@@ -157,7 +165,10 @@ const [selectedAction, setSelectedAction] = useState(null);
                   <li key={item.id}>
                     <div
                       className="d-flex align-items-center gap-2 py-2 px-3 rounded mb-1 cursor-pointer"
-                      onClick={() => setSelectedAction(selectedAction === item.id ? null : item.id)}
+                      onClick={() => {
+                        console.log("🖱️ Click vào menu item có children:", item.label, item.id);
+                        setSelectedAction(selectedAction === item.id ? null : item.id);
+                      }}
                       style={{ cursor: 'pointer' }}
                     >
                       <FontAwesomeIcon icon={icon} className={item.color || "text-primary"} />
@@ -169,7 +180,10 @@ const [selectedAction, setSelectedAction] = useState(null);
                           <li 
                             key={child.id}
                             className="py-2 cursor-pointer"
-                            onClick={() => navigate(child.path)}
+                            onClick={() => {
+                              console.log("🖱️ Click vào submenu:", child.label, child.path);
+                              navigate(child.path);
+                            }}
                             style={{ cursor: 'pointer' }}
                           >
                             {child.label}
@@ -185,7 +199,14 @@ const [selectedAction, setSelectedAction] = useState(null);
                 <li 
                   key={item.id}
                   className="d-flex align-items-center gap-2 py-2 px-3 rounded mb-1 cursor-pointer"
-                  onClick={() => item.path && navigate(item.path)}
+                  onClick={() => {
+                    if (item.path) {
+                      console.log("🖱️ Click vào menu item:", item.label, item.path);
+                      navigate(item.path);
+                    } else {
+                      console.warn("⚠️ Menu item không có path:", item.label, item.id);
+                    }
+                  }}
                   style={{ cursor: item.path ? 'pointer' : 'default' }}
                 >
                   <FontAwesomeIcon icon={icon} className={item.color || "text-secondary"} />
