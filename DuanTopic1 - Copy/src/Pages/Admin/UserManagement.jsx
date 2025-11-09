@@ -465,10 +465,10 @@ export default function UserManagement() {
           updateData.email = formData.email;
         }
         
-        // Chỉ gửi role nếu có thay đổi
-        if (formData.role && formData.role !== selectedUser.role) {
-          updateData.role = formData.role;
-        }
+        // KHÔNG cho phép thay đổi role khi edit - bỏ phần này
+        // if (formData.role && formData.role !== selectedUser.role) {
+        //   updateData.role = formData.role;
+        // }
         
         // Chỉ gửi dealerId nếu có thay đổi hoặc role là STAFF/MANAGER
         if (formData.dealerId !== selectedUser.dealer?.dealerId) {
@@ -968,31 +968,48 @@ export default function UserManagement() {
                 )}
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-                    Vai trò *
+                    Vai trò {!isEdit && "*"}
                   </label>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={e => {
-                      setFormData({...formData, role: e.target.value, dealerId: ""});
-                      // Tạo password mới khi đổi role (nếu chưa có và không phải edit)
-                      if (!formData.password && !isEdit) {
-                        const newPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase();
-                        setFormData(prev => ({...prev, password: newPassword}));
-                      }
-                    }}
-                    required={!isEdit}
-                    style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ddd" }}
-                  >
-                    <option value="">-- Chọn vai trò --</option>
-                    <option value="STAFF">Nhân viên đại lý</option>
-                    <option value="MANAGER">Quản lý đại lý</option>
-                    <option value="EVM_STAFF">Nhân viên EVM</option>
-                    <option value="ADMIN">Quản trị viên</option>
-                  </select>
-                  <small style={{ color: "#666", fontSize: "12px", display: "block", marginTop: "5px" }}>
-                    💡 Chọn vai trò phù hợp cho tài khoản. Nhân viên đại lý và Quản lý đại lý cần chọn đại lý.
-                  </small>
+                  {isEdit ? (
+                    // Khi edit: chỉ hiển thị role, không cho chỉnh sửa
+                    <div style={{ 
+                      width: "100%", 
+                      padding: "10px", 
+                      borderRadius: "6px", 
+                      border: "1px solid #ddd",
+                      background: "#f5f5f5",
+                      color: "#666"
+                    }}>
+                      {getRoleName(formData.role) || "—"}
+                    </div>
+                  ) : (
+                    // Khi tạo mới: cho phép chọn role
+                    <>
+                      <select
+                        name="role"
+                        value={formData.role}
+                        onChange={e => {
+                          setFormData({...formData, role: e.target.value, dealerId: ""});
+                          // Tạo password mới khi đổi role (nếu chưa có và không phải edit)
+                          if (!formData.password && !isEdit) {
+                            const newPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase();
+                            setFormData(prev => ({...prev, password: newPassword}));
+                          }
+                        }}
+                        required={!isEdit}
+                        style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ddd" }}
+                      >
+                        <option value="">-- Chọn vai trò --</option>
+                        <option value="STAFF">Nhân viên đại lý</option>
+                        <option value="MANAGER">Quản lý đại lý</option>
+                        <option value="EVM_STAFF">Nhân viên EVM</option>
+                        <option value="ADMIN">Quản trị viên</option>
+                      </select>
+                      <small style={{ color: "#666", fontSize: "12px", display: "block", marginTop: "5px" }}>
+                        💡 Chọn vai trò phù hợp cho tài khoản. Nhân viên đại lý và Quản lý đại lý cần chọn đại lý.
+                      </small>
+                    </>
+                  )}
                 </div>
                 {/* Backend yêu cầu dealerId cho tất cả user không phải ADMIN */}
                 {formData.role && formData.role !== "ADMIN" && (
