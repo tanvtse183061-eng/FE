@@ -9,7 +9,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import { getMenuItemsByRole, getRoleDisplayName } from '../../config/roleMenus';
 
-export default function Admin() {
+export default function EVMStaff() {
  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
 const [showNotifications, setShowNotifications] = useState(false);
@@ -31,10 +31,10 @@ const [selectedAction, setSelectedAction] = useState(null);
     
     if (savedUser && savedRole) {
       // Kiểm tra role có đúng với route không
-      if (savedRole !== "ADMIN") {
+      if (savedRole !== "EVM_STAFF") {
         // Redirect về đúng route theo role
-        if (savedRole === "EVM_STAFF") {
-          navigate("/evmstaff");
+        if (savedRole === "ADMIN") {
+          navigate("/admin");
         } else if (savedRole === "MANAGER") {
           navigate("/dealermanager");
         } else if (savedRole === "STAFF") {
@@ -291,3 +291,4 @@ const [selectedAction, setSelectedAction] = useState(null);
     </div>
   );
 }
+

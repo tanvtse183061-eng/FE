@@ -8,7 +8,7 @@ import {
   faHouse,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
-import { authAPI } from "../../services/API.js";
+import { authAPI, userAPI } from "../../services/API.js";
 
 const initForm = { username: "", password: "" };
 
@@ -56,12 +56,56 @@ export default function Login() {
       console.log("✅ Login response:", data);
 
       if (data?.accessToken) {
+        // Kiểm tra trạng thái tài khoản
+        let isActive = true;
+        
+        // Kiểm tra trong response trước
+        if (data.isActive !== undefined) {
+          isActive = data.isActive;
+        } else if (data.user?.isActive !== undefined) {
+          isActive = data.user.isActive;
+        } else {
+          // Nếu không có trong response, gọi API để lấy thông tin user
+          try {
+            const userRes = await userAPI.getUsers();
+            const user = userRes.data?.find(u => u.username === data.username);
+            if (user) {
+              isActive = user.isActive !== false; // Mặc định true nếu không có
+            }
+          } catch (userErr) {
+            console.warn("Không thể kiểm tra trạng thái user:", userErr);
+            // Tiếp tục với mặc định isActive = true
+          }
+        }
+
+        // Nếu tài khoản bị ngừng hoạt động
+        if (!isActive) {
+          alert("⚠️ Tài khoản của bạn đã bị ngừng hoạt động!\nVui lòng liên hệ quản trị viên để được kích hoạt lại.");
+          setLoading(false);
+          return;
+        }
+
+        // Lưu thông tin đăng nhập
         localStorage.setItem("token", data.accessToken);
         localStorage.setItem("username", data.username);
         localStorage.setItem("role", data.role);
 
         alert("Đăng nhập thành công!");
-        navigate("/dealerstaff");
+        
+        // Redirect theo role
+        const role = data.role;
+        if (role === "ADMIN") {
+          navigate("/admin");
+        } else if (role === "EVM_STAFF") {
+          navigate("/evmstaff");
+        } else if (role === "MANAGER") {
+          navigate("/dealermanager");
+        } else if (role === "STAFF") {
+          navigate("/dealerstaff");
+        } else {
+          // Default fallback
+          navigate("/dealerstaff");
+        }
       } else {
         alert("Sai tài khoản hoặc mật khẩu!");
       }
