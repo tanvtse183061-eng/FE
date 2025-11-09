@@ -15,6 +15,16 @@ export default function UserManagement() {
   const [error, setError] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInfo, setPasswordInfo] = useState({ username: "", password: "", role: "" });
+  
+  // Cache role để giữ lại role ngay cả khi API không trả về
+  const [roleCache, setRoleCache] = useState(() => {
+    try {
+      const cached = localStorage.getItem('userRoleCache');
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const [formData, setFormData] = useState({
     username: "",
@@ -53,6 +63,7 @@ export default function UserManagement() {
       console.log("📥 Role của từng user:", usersData.map(u => ({ 
         username: u.username, 
         role: u.role,
+        userType: u.userType,
         userRole: u.userRole,
         roles: u.roles,
         userId: u.userId 
@@ -66,14 +77,23 @@ export default function UserManagement() {
       })));
       
       // Đảm bảo xử lý isActive, role và dealer đúng cách - GIỮ NGUYÊN giá trị từ API
+      // Lưu state cũ để merge role nếu API không trả về
+      const oldUsersMap = new Map(users.map(u => [u.userId, u]));
+      
       const processedUsers = usersData.map(u => {
         // Log để debug
         const originalIsActive = u.isActive;
         const originalRole = u.role;
         
+        // Nếu API không trả về role, thử lấy từ state cũ
+        const oldUser = oldUsersMap.get(u.userId);
+        if (!originalRole && oldUser && oldUser.role) {
+          console.log(`⚠️ User ${u.username}: API không trả về role, dùng từ state cũ:`, oldUser.role);
+        }
+        
         // Xử lý role: thử lấy từ nhiều field khác nhau
-        // Kiểm tra cả empty string và null/undefined
-        let processedRole = u.role;
+        // Backend có thể dùng userType thay vì role
+        let processedRole = u.role || u.userType;
         if ((!processedRole || processedRole === "" || processedRole === null || processedRole === undefined) && u.userRole) {
           processedRole = u.userRole;
           console.log(`⚠️ User ${u.username}: role không có, dùng userRole: ${u.userRole}`);
@@ -81,7 +101,7 @@ export default function UserManagement() {
           processedRole = u.roles[0];
           console.log(`⚠️ User ${u.username}: role không có, dùng roles[0]: ${u.roles[0]}`);
         } else if (!processedRole || processedRole === "" || processedRole === null || processedRole === undefined) {
-          console.warn(`⚠️ User ${u.username}: role là ${originalRole} (${typeof originalRole}), userRole là ${u.userRole}, roles là ${u.roles}`);
+          console.warn(`⚠️ User ${u.username}: role là ${originalRole} (${typeof originalRole}), userType là ${u.userType}, userRole là ${u.userRole}, roles là ${u.roles}`);
         }
         
         // Đảm bảo processedRole không phải empty string
@@ -123,15 +143,63 @@ export default function UserManagement() {
           }
         }
         
-        // Đảm bảo role không bị mất - ưu tiên processedRole, sau đó originalRole, cuối cùng là u.role
-        const finalRole = processedRole || originalRole || u.role;
+        // Đảm bảo role không bị mất - ưu tiên processedRole, sau đó originalRole, cuối cùng là u.role hoặc u.userType
+        // Thử lấy từ nhiều nguồn
+        let finalRole = processedRole || originalRole || u.role || u.userType;
+        if (!finalRole || finalRole === "" || finalRole === null || finalRole === undefined) {
+          finalRole = u.userRole || (u.roles && Array.isArray(u.roles) && u.roles.length > 0 ? u.roles[0] : null);
+          if (finalRole) {
+            console.log(`⚠️ User ${u.username}: dùng role từ userRole/roles trong fetchUsers:`, finalRole);
+          }
+        }
+        
+        // Nếu vẫn không có role, thử lấy từ state cũ
+        if ((!finalRole || finalRole === "" || finalRole === null || finalRole === undefined) && oldUser && oldUser.role) {
+          finalRole = oldUser.role;
+          console.log(`⚠️ User ${u.username}: dùng role từ state cũ:`, finalRole);
+        }
+        
+        // Nếu vẫn không có role, thử lấy từ cache
+        if ((!finalRole || finalRole === "" || finalRole === null || finalRole === undefined) && roleCache[u.userId]) {
+          finalRole = roleCache[u.userId];
+          console.log(`⚠️ User ${u.username}: dùng role từ cache:`, finalRole);
+        }
+        
+        // Nếu có role, lưu vào cache
+        if (finalRole && finalRole !== "" && finalRole !== null && finalRole !== undefined) {
+          if (!roleCache[u.userId] || roleCache[u.userId] !== finalRole) {
+            setRoleCache(prev => {
+              const newCache = { ...prev, [u.userId]: finalRole };
+              try {
+                localStorage.setItem('userRoleCache', JSON.stringify(newCache));
+              } catch (e) {
+                console.warn("Không thể lưu role vào localStorage:", e);
+              }
+              return newCache;
+            });
+          }
+        }
+        
+        // Debug: log nếu vẫn không có role
+        if (!finalRole || finalRole === "" || finalRole === null || finalRole === undefined) {
+          console.error(`❌ User ${u.username} KHÔNG CÓ ROLE sau khi xử lý!`, {
+            originalRole: originalRole,
+            processedRole: processedRole,
+            userRole: u.userRole,
+            roles: u.roles,
+            oldUserRole: oldUser?.role,
+            cachedRole: roleCache[u.userId],
+            finalRole: finalRole
+          });
+        }
         
         return {
           ...u,
           // GIỮ NGUYÊN giá trị isActive từ API
           isActive: processedIsActive,
           // GIỮ NGUYÊN giá trị role từ API (hoặc từ fallback) - đảm bảo không bị empty string
-          role: finalRole && finalRole !== "" ? finalRole : u.role,
+          // Backend có thể dùng userType thay vì role
+          role: finalRole && finalRole !== "" ? finalRole : (roleCache[u.userId] || oldUser?.role || u.role || u.userType || u.userRole || (u.roles && Array.isArray(u.roles) && u.roles.length > 0 ? u.roles[0] : null)),
           // GIỮ NGUYÊN dealer object từ API (hoặc từ danh sách dealers)
           dealer: processedDealer || u.dealer
         };
@@ -403,12 +471,15 @@ export default function UserManagement() {
         }
         
         // Luôn gửi role khi edit (để đảm bảo backend cập nhật đúng)
+        // Backend có thể dùng userType thay vì role
         // Ưu tiên role từ formData, nếu không có thì dùng role từ selectedUser
         if (formData.role && formData.role !== "") {
           updateData.role = formData.role;
+          updateData.userType = formData.role; // Backend có thể dùng userType
         } else if (selectedUser.role && selectedUser.role !== "") {
           // Nếu formData không có role nhưng selectedUser có, vẫn gửi để đảm bảo không bị mất
           updateData.role = selectedUser.role;
+          updateData.userType = selectedUser.role; // Backend có thể dùng userType
         }
         
         // Luôn gửi dealerId nếu có giá trị (để đảm bảo backend cập nhật đúng)
@@ -484,6 +555,20 @@ export default function UserManagement() {
                 // Merge data từ API với data đã update
                 // Đảm bảo role được giữ lại (từ formData nếu có, hoặc từ refreshedUser, hoặc từ user cũ)
                 const preservedRole = formData.role || refreshedUser.role || u.role || selectedUser.role;
+                
+                // Lưu role vào cache
+                if (preservedRole) {
+                  setRoleCache(prev => {
+                    const newCache = { ...prev, [u.userId]: preservedRole };
+                    try {
+                      localStorage.setItem('userRoleCache', JSON.stringify(newCache));
+                    } catch (e) {
+                      console.warn("Không thể lưu role vào localStorage:", e);
+                    }
+                    return newCache;
+                  });
+                }
+                
                 const updatedUser = {
                   ...u,
                   ...refreshedUser,
@@ -566,6 +651,7 @@ export default function UserManagement() {
             phone: formData.phone || "",
             address: "", // Backend có thể yêu cầu, để trống nếu không có
             role: formData.role,
+            userType: formData.role, // Backend có thể dùng userType thay vì role
             isActive: formData.isActive !== false
           };
           
@@ -703,6 +789,39 @@ export default function UserManagement() {
           
           console.log("✅ Final password to display:", password);
           
+          // Kiểm tra response có chứa user data không
+          const createdUser = res.data?.user || res.data?.data || res.data;
+          console.log("📥 User được tạo từ API response:", createdUser);
+          console.log("📥 Role trong response:", createdUser?.role, "formData.role:", formData.role);
+          
+          // Đảm bảo role được lưu vào state ngay sau khi tạo
+          if (createdUser && createdUser.userId) {
+            // Lưu role vào cache
+            const userRole = createdUser.role || formData.role;
+            if (userRole) {
+              setRoleCache(prev => {
+                const newCache = { ...prev, [createdUser.userId]: userRole };
+                try {
+                  localStorage.setItem('userRoleCache', JSON.stringify(newCache));
+                } catch (e) {
+                  console.warn("Không thể lưu role vào localStorage:", e);
+                }
+                return newCache;
+              });
+            }
+            
+            // Thêm user mới vào state với role từ formData (vì API có thể không trả về role)
+            setUsers(prevUsers => {
+              const newUser = {
+                ...createdUser,
+                role: userRole, // Ưu tiên role từ API, nếu không có thì dùng từ formData
+                dealer: createdUser.dealer || (formData.dealerId ? dealers.find(d => d.dealerId === formData.dealerId) : null)
+              };
+              console.log("✅ Thêm user mới vào state với role:", newUser.role);
+              return [newUser, ...prevUsers];
+            });
+          }
+          
           setPasswordInfo({
             username: formData.username,
             password: password,
@@ -711,6 +830,8 @@ export default function UserManagement() {
           setShowPasswordModal(true);
           setShowPopup(false);
           setError("");
+          
+          // Fetch lại để đảm bảo data đồng bộ, nhưng đã thêm vào state rồi nên không cần đợi
           fetchUsers();
         } catch (createErr) {
           console.error("❌ Lỗi khi tạo user:", createErr);
@@ -829,28 +950,46 @@ export default function UserManagement() {
                   <td>{u.phone || "—"}</td>
                   <td>
                     {(() => {
-                      // Debug: log role để kiểm tra
-                      if (!u.role || u.role === "" || u.role === null || u.role === undefined) {
-                        console.warn(`⚠️ User ${u.username} không có role:`, u.role, "type:", typeof u.role);
+                      // Thử lấy role từ nhiều nguồn (backend có thể dùng userType)
+                      let displayRole = u.role || u.userType;
+                      if (!displayRole || displayRole === "" || displayRole === null || displayRole === undefined) {
+                        displayRole = u.userRole || u.roles?.[0] || null;
+                        // Chỉ log khi tìm thấy role từ nguồn khác
+                        if (displayRole) {
+                          console.log(`⚠️ User ${u.username}: dùng role từ userRole/roles:`, displayRole);
+                        }
                       }
-                      const roleName = getRoleName(u.role);
-                      const hasValidRole = u.role && u.role !== "" && u.role !== null && u.role !== undefined;
+                      
+                      const roleName = getRoleName(displayRole);
+                      const hasValidRole = displayRole && displayRole !== "" && displayRole !== null && displayRole !== undefined;
+                      
+                      // Chỉ log cảnh báo khi không có role (không log mỗi lần render)
+                      if (!hasValidRole && !u._roleLogged) {
+                        console.warn(`❌ User ${u.username} KHÔNG CÓ ROLE!`, {
+                          role: u.role,
+                          userRole: u.userRole,
+                          roles: u.roles,
+                          displayRole: displayRole
+                        });
+                        u._roleLogged = true; // Đánh dấu đã log để tránh spam
+                      }
                       
                       return (
                         <span style={{
                           background: hasValidRole ? (
-                            u.role === "ADMIN" ? "#fef3c7" : 
-                            u.role === "EVM_STAFF" ? "#dbeafe" :
-                            u.role === "MANAGER" ? "#d1fae5" : "#e0e7ff"
-                          ) : "#f3f4f6",
+                            displayRole === "ADMIN" ? "#fef3c7" : 
+                            displayRole === "EVM_STAFF" ? "#dbeafe" :
+                            displayRole === "MANAGER" ? "#d1fae5" : "#e0e7ff"
+                          ) : "#fee2e2",
                           color: hasValidRole ? (
-                            u.role === "ADMIN" ? "#92400e" :
-                            u.role === "EVM_STAFF" ? "#1e40af" :
-                            u.role === "MANAGER" ? "#065f46" : "#3730a3"
-                          ) : "#6b7280",
+                            displayRole === "ADMIN" ? "#92400e" :
+                            displayRole === "EVM_STAFF" ? "#1e40af" :
+                            displayRole === "MANAGER" ? "#065f46" : "#3730a3"
+                          ) : "#dc2626",
                           padding: "5px 8px",
                           borderRadius: "5px",
-                          fontSize: "12px"
+                          fontSize: "12px",
+                          fontWeight: hasValidRole ? "normal" : "bold"
                         }}>
                           {roleName}
                         </span>
