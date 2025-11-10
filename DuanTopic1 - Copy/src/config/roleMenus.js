@@ -4,6 +4,7 @@
 export const ROLE_NAMES = {
   ADMIN: "Quản trị viên",
   EVM_STAFF: "Nhân viên EVM",
+  EVM_MANAGER: "Quản lý EVM",
   MANAGER: "Quản lý đại lý",
   STAFF: "Nhân viên đại lý"
 };

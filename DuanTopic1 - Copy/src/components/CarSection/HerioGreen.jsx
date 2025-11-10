@@ -3,6 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
+import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
 
 import anhVang from "../../assets/cars/herio-yellow.png";
 import anhDo from "../../assets/cars/herio-red.png";
@@ -15,20 +16,36 @@ import "./Car.css";
 export default function HerioGreen() {
   const [index, setIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  
+  // Kiểm tra role của user
+  const userRole = localStorage.getItem("role");
+  const isDealerStaff = userRole === "STAFF" || userRole === "DEALER_STAFF";
 
   const carImages = [
-    { src: anhDo, alt: "Herio Red" },
-    { src: anhTrang, alt: "Herio White" },
-    { src: anhVang, alt: "Herio Yellow" },
-    { src: anhDen, alt: "Herio Black" },
+    { src: anhDo, alt: "Herio Red", color: "Đỏ" },
+    { src: anhTrang, alt: "Herio White", color: "Trắng" },
+    { src: anhVang, alt: "Herio Yellow", color: "Vàng" },
+    { src: anhDen, alt: "Herio Black", color: "Đen" },
   ];
+
+  const colorNames = ["Xám", "Đỏ", "Trắng", "Vàng", "Đen"];
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
 
   const handleImageClick = () => {
-    setShowModal(true);
+    if (isDealerStaff) {
+      setShowOrderModal(true);
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const getCurrentColor = () => {
+    if (index === 0) return "Xám";
+    return carImages[index - 1]?.color || colorNames[index] || "";
   };
 
   const closeModal = () => {
@@ -104,7 +121,19 @@ export default function HerioGreen() {
           ))}
         </div>
 
-        <ContactModal isOpen={showModal} onClose={closeModal} />
+        {showModal && !isDealerStaff && (
+          <ContactModal isOpen={showModal} onClose={closeModal} />
+        )}
+        
+        {showOrderModal && isDealerStaff && (
+          <CreateOrderFromCar
+            show={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            carName="Herio Green"
+            carColor={getCurrentColor()}
+            carPrice={499000000}
+          />
+        )}
       </div>
       <Footer />
     </>

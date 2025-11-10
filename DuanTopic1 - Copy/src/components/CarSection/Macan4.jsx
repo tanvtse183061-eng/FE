@@ -3,6 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
+import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
 
 import anhTim from "../../assets/cars/Macantim4.png";
 import anhXanhDuong from "../../assets/cars/Macan4-blue.png";
@@ -14,19 +15,35 @@ import "./Car.css";
 export default function Macan4() {
   const [index, setIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  
+  // Kiểm tra role của user
+  const userRole = localStorage.getItem("role");
+  const isDealerStaff = userRole === "STAFF" || userRole === "DEALER_STAFF";
 
   const carImages = [
-    { src: anhXanhDuong, alt: "Macan 4 Blue" },
-    { src: anhXanhLa, alt: "Macan 4 Green" },
-    { src: anhCam, alt: "Macan 4 Orange" },
+    { src: anhXanhDuong, alt: "Macan 4 Blue", color: "Xanh dương" },
+    { src: anhXanhLa, alt: "Macan 4 Green", color: "Xanh lá" },
+    { src: anhCam, alt: "Macan 4 Orange", color: "Cam" },
   ];
+
+  const colorNames = ["Tím", "Xanh dương", "Xanh lá", "Cam"];
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
 
   const handleImageClick = () => {
-    setShowModal(true);
+    if (isDealerStaff) {
+      setShowOrderModal(true);
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const getCurrentColor = () => {
+    if (index === 0) return "Tím";
+    return carImages[index - 1]?.color || colorNames[index] || "";
   };
 
   const closeModal = () => {
@@ -63,7 +80,7 @@ export default function Macan4() {
             <img key={i} src={car} alt="color option" onClick={() => setIndex(i - 1 >= 0 ? i - 1 : 0)} className={`thumbnail-img ${index === i - 1 ? "active" : ""}`} />
           ))}
         </div>
-        {showModal && (
+        {showModal && !isDealerStaff && (
           <div className="contact-modal-overlay" onClick={closeModal}>
             <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
               <div className="contact-modal-icon"></div>
@@ -75,6 +92,16 @@ export default function Macan4() {
               <button className="contact-modal-button" onClick={closeModal}>Đóng</button>
             </div>
           </div>
+        )}
+        
+        {showOrderModal && isDealerStaff && (
+          <CreateOrderFromCar
+            show={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            carName="Macan 4 thuần điện"
+            carColor={getCurrentColor()}
+            carPrice={3740000000}
+          />
         )}
       </div>
       <Footer />

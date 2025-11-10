@@ -3,6 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
+import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
 
 // Import ảnh xe VinFast VF7 các màu
 import anhXam from "../../assets/cars/vinfastvf7-gray.png"; // màu chính
@@ -17,21 +18,37 @@ import "./Car.css";
 export default function Vinfast7() {
   const [index, setIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  
+  // Kiểm tra role của user
+  const userRole = localStorage.getItem("role");
+  const isDealerStaff = userRole === "STAFF" || userRole === "DEALER_STAFF";
 
   const carImages = [
-    { src: anhDen, alt: "VF7 Black" },
-    { src: anhXanhDuong, alt: "VF7 Blue" },
-    { src: anhXanhLa, alt: "VF7 Green" },
-    { src: anhDo, alt: "VF7 Red" },
-    { src: anhTrang, alt: "VF7 White" },
+    { src: anhDen, alt: "VF7 Black", color: "Đen" },
+    { src: anhXanhDuong, alt: "VF7 Blue", color: "Xanh dương" },
+    { src: anhXanhLa, alt: "VF7 Green", color: "Xanh lá" },
+    { src: anhDo, alt: "VF7 Red", color: "Đỏ" },
+    { src: anhTrang, alt: "VF7 White", color: "Trắng" },
   ];
+
+  const colorNames = ["Xám", "Đen", "Xanh dương", "Xanh lá", "Đỏ", "Trắng"];
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
 
   const handleImageClick = () => {
-    setShowModal(true);
+    if (isDealerStaff) {
+      setShowOrderModal(true);
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const getCurrentColor = () => {
+    if (index === 0) return "Xám";
+    return carImages[index - 1]?.color || colorNames[index] || "";
   };
 
   const closeModal = () => {
@@ -104,7 +121,7 @@ export default function Vinfast7() {
         </div>
 
         {/* Modal liên hệ tư vấn */}
-        {showModal && (
+        {showModal && !isDealerStaff && (
           <div className="contact-modal-overlay" onClick={closeModal}>
             <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
               <div className="contact-modal-icon">🚗💨</div>
@@ -120,6 +137,16 @@ export default function Vinfast7() {
               </button>
             </div>
           </div>
+        )}
+        
+        {showOrderModal && isDealerStaff && (
+          <CreateOrderFromCar
+            show={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            carName="VinFast VF 7"
+            carColor={getCurrentColor()}
+            carPrice={799000000}
+          />
         )}
       </div>
       <Footer />

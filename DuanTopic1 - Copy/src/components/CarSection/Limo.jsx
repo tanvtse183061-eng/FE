@@ -3,6 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
+import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
 
 // Import ảnh xe Limo các màu
 import anhXam from "../../assets/cars/limogreen-gray.png"; // màu chính
@@ -15,19 +16,35 @@ import "./Car.css";
 export default function Limo() {
   const [index, setIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  
+  // Kiểm tra role của user
+  const userRole = localStorage.getItem("role");
+  const isDealerStaff = userRole === "STAFF" || userRole === "DEALER_STAFF";
 
   const carImages = [
-    { src: anhDen, alt: "Limo Black" },
-    { src: anhDo, alt: "Limo Red" },
-    { src: anhVang, alt: "Limo Yellow" },
+    { src: anhDen, alt: "Limo Black", color: "Đen" },
+    { src: anhDo, alt: "Limo Red", color: "Đỏ" },
+    { src: anhVang, alt: "Limo Yellow", color: "Vàng" },
   ];
+
+  const colorNames = ["Xám", "Đen", "Đỏ", "Vàng"];
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
 
   const handleImageClick = () => {
-    setShowModal(true);
+    if (isDealerStaff) {
+      setShowOrderModal(true);
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const getCurrentColor = () => {
+    if (index === 0) return "Xám";
+    return carImages[index - 1]?.color || colorNames[index] || "";
   };
 
   const closeModal = () => {
@@ -99,7 +116,19 @@ export default function Limo() {
           ))}
         </div>
 
-        <ContactModal isOpen={showModal} onClose={closeModal} />
+        {showModal && !isDealerStaff && (
+          <ContactModal isOpen={showModal} onClose={closeModal} />
+        )}
+        
+        {showOrderModal && isDealerStaff && (
+          <CreateOrderFromCar
+            show={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            carName="Limo Green"
+            carColor={getCurrentColor()}
+            carPrice={749000000}
+          />
+        )}
       </div>
       <Footer />
     </>

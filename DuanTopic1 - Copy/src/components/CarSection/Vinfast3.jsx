@@ -3,6 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
+import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
 
 // Import ảnh xe VinFast VF3 các màu
 import anhVang from "../../assets/cars/vinfastvf3-yellow.png";
@@ -20,24 +21,43 @@ import "./Car.css";
 export default function Vinfast3() {
   const [index, setIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  
+  // Kiểm tra role của user
+  const userRole = localStorage.getItem("role");
+  const isDealerStaff = userRole === "STAFF" || userRole === "DEALER_STAFF";
 
   const carImages = [
-    { src: anhXanhDuong, alt: "VF3 Blue" },
-    { src: anhXamDam, alt: "VF3 Dark Gray" },
-    { src: anhXam, alt: "VF3 Gray" },
-    { src: anhXanhNhat, alt: "VF3 Light Blue" },
-    { src: anhHong, alt: "VF3 Pink" },
-    { src: anhTim, alt: "VF3 Purple" },
-    { src: anhDo, alt: "VF3 Red" },
-    { src: anhTrang, alt: "VF3 White" },
+    { src: anhXanhDuong, alt: "VF3 Blue", color: "Xanh dương" },
+    { src: anhXamDam, alt: "VF3 Dark Gray", color: "Xám đậm" },
+    { src: anhXam, alt: "VF3 Gray", color: "Xám" },
+    { src: anhXanhNhat, alt: "VF3 Light Blue", color: "Xanh nhạt" },
+    { src: anhHong, alt: "VF3 Pink", color: "Hồng" },
+    { src: anhTim, alt: "VF3 Purple", color: "Tím" },
+    { src: anhDo, alt: "VF3 Red", color: "Đỏ" },
+    { src: anhTrang, alt: "VF3 White", color: "Trắng" },
   ];
+
+  const colorNames = ["Vàng", "Xanh dương", "Xám đậm", "Xám", "Xanh nhạt", "Hồng", "Tím", "Đỏ", "Trắng"];
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
 
   const handleImageClick = () => {
-    setShowModal(true);
+    if (isDealerStaff) {
+      // Nếu là DealerStaff, mở modal tạo đơn hàng
+      setShowOrderModal(true);
+    } else {
+      // Nếu không phải DealerStaff, mở modal liên hệ
+      setShowModal(true);
+    }
+  };
+
+  // Lấy màu hiện tại từ index
+  const getCurrentColor = () => {
+    if (index === 0) return "Vàng";
+    return carImages[index - 1]?.color || colorNames[index] || "";
   };
 
   const closeModal = () => {
@@ -74,7 +94,7 @@ export default function Vinfast3() {
             <img key={i} src={car} alt="color option" onClick={() => setIndex(i - 1 >= 0 ? i - 1 : 0)} className={`thumbnail-img ${index === i - 1 ? "active" : ""}`} />
           ))}
         </div>
-        {showModal && (
+        {showModal && !isDealerStaff && (
           <div className="contact-modal-overlay" onClick={closeModal}>
             <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
               <div className="contact-modal-icon"></div>
@@ -86,6 +106,16 @@ export default function Vinfast3() {
               <button className="contact-modal-button" onClick={closeModal}>Đóng</button>
             </div>
           </div>
+        )}
+        
+        {showOrderModal && isDealerStaff && (
+          <CreateOrderFromCar
+            show={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            carName="VinFast VF 3"
+            carColor={getCurrentColor()}
+            carPrice={269000000}
+          />
         )}
       </div>
       <Footer />

@@ -3,6 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
+import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
 
 // Import ảnh xe Minio các màu
 import anhGreen from "../../assets/cars/miniogreen-green.png"; // màu chính
@@ -17,21 +18,37 @@ import "./Car.css";
 export default function Minio() {
   const [index, setIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  
+  // Kiểm tra role của user
+  const userRole = localStorage.getItem("role");
+  const isDealerStaff = userRole === "STAFF" || userRole === "DEALER_STAFF";
 
   const carImages = [
-    { src: anhDen, alt: "Minio Black" },
-    { src: anhHong, alt: "Minio Pink" },
-    { src: anhDo, alt: "Minio Red" },
-    { src: anhTrang, alt: "Minio White" },
-    { src: anhVang, alt: "Minio Yellow" },
+    { src: anhDen, alt: "Minio Black", color: "Đen" },
+    { src: anhHong, alt: "Minio Pink", color: "Hồng" },
+    { src: anhDo, alt: "Minio Red", color: "Đỏ" },
+    { src: anhTrang, alt: "Minio White", color: "Trắng" },
+    { src: anhVang, alt: "Minio Yellow", color: "Vàng" },
   ];
+
+  const colorNames = ["Xanh", "Đen", "Hồng", "Đỏ", "Trắng", "Vàng"];
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
 
   const handleImageClick = () => {
-    setShowModal(true);
+    if (isDealerStaff) {
+      setShowOrderModal(true);
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const getCurrentColor = () => {
+    if (index === 0) return "Xanh";
+    return carImages[index - 1]?.color || colorNames[index] || "";
   };
 
   const closeModal = () => {
@@ -104,7 +121,7 @@ export default function Minio() {
         </div>
 
         {/* Modal liên hệ tư vấn */}
-        {showModal && (
+        {showModal && !isDealerStaff && (
           <div className="contact-modal-overlay" onClick={closeModal}>
             <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
               <div className="contact-modal-icon">🚗💨</div>
@@ -120,6 +137,16 @@ export default function Minio() {
               </button>
             </div>
           </div>
+        )}
+        
+        {showOrderModal && isDealerStaff && (
+          <CreateOrderFromCar
+            show={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            carName="Minio Green"
+            carColor={getCurrentColor()}
+            carPrice={269000000}
+          />
         )}
       </div>
       <Footer />
