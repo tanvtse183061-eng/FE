@@ -413,8 +413,10 @@ export default function UserManagement() {
             throw new Error("Vui lòng chọn đại lý!");
           }
           userData.dealerId = String(formData.dealerId).trim();
+        } else {
+          // EVM_STAFF, ADMIN: Đảm bảo không gửi dealerId
+          delete userData.dealerId;
         }
-        // EVM_STAFF, ADMIN: KHÔNG gửi dealerId
 
         if (formData.password && formData.password.trim() !== "") {
           userData.password = formData.password;
@@ -514,12 +516,13 @@ export default function UserManagement() {
     }
   };
 
-  // ✅ Lấy tên role (BỎ EVM_MANAGER)
+  // ✅ Lấy tên role
   const getRoleName = (role) => {
     if (!role) return "—";
     const roles = {
       ADMIN: "Quản trị viên",
       EVM_STAFF: "Nhân viên EVM",
+      EVM_MANAGER: "Quản lý EVM",
       MANAGER: "Quản lý đại lý",
       STAFF: "Nhân viên đại lý",
       DEALER_STAFF: "Nhân viên đại lý",

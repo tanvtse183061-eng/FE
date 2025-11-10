@@ -269,7 +269,10 @@ export default function CreateOrderFromCar({
   if (!show) return null;
 
   return (
-    <div className="create-order-modal-overlay" onClick={onClose}>
+    <div 
+      className="create-order-modal-overlay" 
+      onClick={onClose}
+    >
       <div className="create-order-modal" onClick={(e) => e.stopPropagation()}>
         <div className="create-order-modal-header">
           <h2>

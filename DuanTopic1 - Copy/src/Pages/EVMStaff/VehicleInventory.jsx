@@ -78,6 +78,9 @@ export default function VehicleInventory() {
       const warehouseRes = warehouseRes1?.data?.length > 0 ? warehouseRes1 : warehouseRes2;
 
       // 🔍 Debug: Log dữ liệu để kiểm tra
+      console.log("📦 Variants:", variantRes.data);
+      console.log("🎨 Colors:", colorRes.data);
+      console.log("🏭 Warehouses:", warehouseRes?.data);
 
       setVehicles(vehicleRes.data || []);
       setVariants(variantRes.data || []);
@@ -172,18 +175,26 @@ export default function VehicleInventory() {
       return;
     }
 
+    // 🔍 Debug: Log formData trước khi submit
+    console.log("📤 FormData trước khi submit:", formData);
+    console.log("📤 variantId:", formData.variantId, "type:", typeof formData.variantId);
+    console.log("📤 colorId:", formData.colorId, "type:", typeof formData.colorId);
+    console.log("📤 warehouseId:", formData.warehouseId, "type:", typeof formData.warehouseId);
+
     const payload = {
       vin: formData.vin,
       chassisNumber: formData.chassisNumber || "",
       licensePlate: formData.licensePlate || "",
-      variantId: Number(formData.variantId),
-      colorId: formData.colorId ? Number(formData.colorId) : null,
-      warehouseId: formData.warehouseId ? Number(formData.warehouseId) : null,
+      variantId: formData.variantId ? Number(formData.variantId) : null,
+      colorId: formData.colorId && formData.colorId !== "" ? Number(formData.colorId) : null,
+      warehouseId: formData.warehouseId && formData.warehouseId !== "" ? Number(formData.warehouseId) : null,
       manufacturingDate: formData.manufacturingDate || null,
       arrivalDate: formData.arrivalDate || null,
       price: formData.price ? Number(formData.price) : null,
       status: formData.status || "AVAILABLE",
     };
+
+    console.log("📤 Payload gửi lên server:", payload);
 
     try {
       if (isEdit && selectedVehicle) {
@@ -334,42 +345,63 @@ export default function VehicleInventory() {
 
                 <select
                   name="variantId"
-                  value={formData.variantId}
-                  onChange={(e) => setFormData({ ...formData, variantId: e.target.value })}
+                  value={formData.variantId || ""}
+                  onChange={(e) => {
+                    console.log("🔹 Selected variantId:", e.target.value);
+                    setFormData({ ...formData, variantId: e.target.value });
+                  }}
                   required
                 >
                   <option value="">-- Chọn biến thể --</option>
-                  {variants.map((v) => (
-                    <option key={v.variantId || v.id} value={v.variantId || v.id}>
-                      {v.variantName || v.name || `Variant ${v.variantId || v.id}`}
-                    </option>
-                  ))}
+                  {variants.map((v) => {
+                    const variantId = v.variantId || v.id || v.variant?.variantId || v.variant?.id;
+                    const variantName = v.variantName || v.name || v.variant?.variantName || v.variant?.name || `Variant ${variantId}`;
+                    return (
+                      <option key={variantId} value={String(variantId || "")}>
+                        {variantName}
+                      </option>
+                    );
+                  })}
                 </select>
 
                 <select
                   name="colorId"
-                  value={formData.colorId}
-                  onChange={(e) => setFormData({ ...formData, colorId: e.target.value })}
+                  value={formData.colorId || ""}
+                  onChange={(e) => {
+                    console.log("🎨 Selected colorId:", e.target.value);
+                    setFormData({ ...formData, colorId: e.target.value });
+                  }}
                 >
                   <option value="">-- Chọn màu --</option>
-                  {colors.map((c) => (
-                    <option key={c.colorId || c.id} value={c.colorId || c.id}>
-                      {c.colorName || c.color || `Color ${c.colorId || c.id}`}
-                    </option>
-                  ))}
+                  {colors.map((c) => {
+                    const colorId = c.colorId || c.id || c.color?.colorId || c.color?.id;
+                    const colorName = c.colorName || c.color || c.name || c.color?.colorName || c.color?.color || `Color ${colorId}`;
+                    return (
+                      <option key={colorId} value={String(colorId || "")}>
+                        {colorName}
+                      </option>
+                    );
+                  })}
                 </select>
 
                 <select
                   name="warehouseId"
-                  value={formData.warehouseId}
-                  onChange={(e) => setFormData({ ...formData, warehouseId: e.target.value })}
+                  value={formData.warehouseId || ""}
+                  onChange={(e) => {
+                    console.log("🏭 Selected warehouseId:", e.target.value);
+                    setFormData({ ...formData, warehouseId: e.target.value });
+                  }}
                 >
                   <option value="">-- Chọn kho --</option>
-                  {warehouses.map((w) => (
-                    <option key={w.warehouseId || w.id} value={w.warehouseId || w.id}>
-                      {w.warehouseName || w.name || `Warehouse ${w.warehouseId || w.id}`}
-                    </option>
-                  ))}
+                  {warehouses.map((w) => {
+                    const warehouseId = w.warehouseId || w.id || w.warehouse?.warehouseId || w.warehouse?.id;
+                    const warehouseName = w.warehouseName || w.name || w.warehouse?.warehouseName || w.warehouse?.name || `Warehouse ${warehouseId}`;
+                    return (
+                      <option key={warehouseId} value={String(warehouseId || "")}>
+                        {warehouseName}
+                      </option>
+                    );
+                  })}
                 </select>
 
                 <input

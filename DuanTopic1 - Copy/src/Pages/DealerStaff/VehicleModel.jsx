@@ -107,9 +107,33 @@ export default function VehicleModel() {
     setShowPopup(true);
   };
 
-  const handleView = (m) => {
-    setSelectedModel(m);
-    setShowDetail(true);
+  const handleView = async (m) => {
+    try {
+      // Fetch chi tiết từ API để đảm bảo có đầy đủ dữ liệu
+      let modelData = m;
+      try {
+        const res = await vehicleAPI.getModel(m.modelId);
+        modelData = res.data || m;
+      } catch (err) {
+        console.warn("⚠️ Không thể fetch chi tiết model, dùng dữ liệu từ list:", err);
+      }
+
+      // Merge brand từ danh sách brands nếu không có trong modelData
+      if (!modelData.brand && (modelData.brandId || m.brandId)) {
+        const brandId = modelData.brandId || m.brandId;
+        const brandFromList = brands.find((b) => b.brandId === brandId);
+        if (brandFromList) {
+          modelData.brand = brandFromList;
+        }
+      }
+
+      setSelectedModel(modelData);
+      setShowDetail(true);
+    } catch (err) {
+      console.error("Lỗi khi xem chi tiết:", err);
+      setSelectedModel(m);
+      setShowDetail(true);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -336,13 +360,41 @@ export default function VehicleModel() {
         <div className="popup-overlay" onClick={(e) => { if (e.target.className === 'popup-overlay') setShowDetail(false); }}>
           <div className="popup-box">
             <h2>Chi tiết dòng xe</h2>
-            <p><b>Tên:</b> {selectedModel.modelName}</p>
-            <p><b>Hãng:</b> {selectedModel.brand?.brandName || "—"}</p>
+            <p><b>Tên:</b> {selectedModel.modelName || "—"}</p>
+            <p><b>Hãng:</b> {
+              selectedModel.brand?.brandName || 
+              (selectedModel.brandId ? brands.find(b => b.brandId === selectedModel.brandId)?.brandName : null) || 
+              "—"
+            }</p>
             <p><b>Vehicle Type:</b> {selectedModel.vehicleType || "—"}</p>
             <p><b>Năm:</b> {selectedModel.modelYear || selectedModel.year || "—"}</p>
             <p><b>Effective Model Year:</b> {selectedModel.effectiveModelYear ?? 0}</p>
             <p><b>Mô tả:</b> {selectedModel.description || "—"}</p>
-            <p><b>Ảnh:</b> {selectedModel.modelImageUrl || selectedModel.modelImagePath || "—"}</p>
+            <div>
+              <b>Ảnh:</b> {
+                (selectedModel.modelImageUrl || selectedModel.modelImagePath) ? (
+                  <div style={{ marginTop: "10px" }}>
+                    <img 
+                      src={selectedModel.modelImageUrl || selectedModel.modelImagePath} 
+                      alt={selectedModel.modelName || "Model image"}
+                      style={{ 
+                        maxWidth: "100%", 
+                        maxHeight: "300px", 
+                        borderRadius: "8px",
+                        border: "1px solid #ddd"
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "block";
+                      }}
+                    />
+                    <span style={{ display: "none", color: "#666" }}>
+                      {selectedModel.modelImageUrl || selectedModel.modelImagePath}
+                    </span>
+                  </div>
+                ) : "—"
+              }
+            </div>
             <p><b>Trạng thái:</b> {selectedModel.isActive ? "Hoạt động" : "Ngừng"}</p>
             <button onClick={() => setShowDetail(false)}>Đóng</button>
           </div>
