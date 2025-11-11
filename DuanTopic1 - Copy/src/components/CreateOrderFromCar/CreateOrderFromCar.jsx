@@ -82,6 +82,7 @@ export default function CreateOrderFromCar({
 
   const loadVariantsAndColors = async () => {
     try {
+      setLoading(true);
       const [variantsRes, colorsRes] = await Promise.all([
         vehicleAPI.getVariants(),
         vehicleAPI.getColors(),
@@ -119,6 +120,26 @@ export default function CreateOrderFromCar({
       }
     } catch (err) {
       console.error("Lỗi khi load variants/colors:", err);
+      console.error("Chi tiết lỗi:", {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message,
+      });
+      
+      // Hiển thị thông báo lỗi cho người dùng
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          "Không thể tải danh sách biến thể và màu sắc. Vui lòng thử lại sau.";
+      setError(errorMessage);
+      
+      // Nếu lỗi 500, có thể là lỗi server
+      if (err.response?.status === 500) {
+        setError("Lỗi máy chủ: Không thể kết nối đến server. Vui lòng kiểm tra kết nối hoặc liên hệ quản trị viên.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
