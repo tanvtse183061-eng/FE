@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { customerAPI, orderAPI, vehicleAPI } from "../../services/API.js";
+import { customerAPI, publicOrderAPI, publicVehicleAPI } from "../../services/API.js";
 import "./CreateOrderFromCar.css";
 
 export default function CreateOrderFromCar({ 
@@ -14,6 +14,8 @@ export default function CreateOrderFromCar({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [orderNumber, setOrderNumber] = useState(null); // Lưu orderNumber sau khi tạo thành công
+  const [orderId, setOrderId] = useState(null); // Lưu orderId để track/view/cancel
 
   // Form khách hàng
   const [customerForm, setCustomerForm] = useState({
@@ -36,6 +38,8 @@ export default function CreateOrderFromCar({
     variantId: "",
     colorId: "",
     price: carPrice || "",
+    depositAmount: "",
+    paymentMethod: "cash",
     notes: "",
   });
 
@@ -68,8 +72,12 @@ export default function CreateOrderFromCar({
         variantId: "",
         colorId: "",
         price: carPrice || "",
+        depositAmount: "",
+        paymentMethod: "cash",
         notes: "",
       });
+      setOrderNumber(null);
+      setOrderId(null);
     }
   }, [show, carPrice]);
 
@@ -84,8 +92,8 @@ export default function CreateOrderFromCar({
     try {
       setLoading(true);
       const [variantsRes, colorsRes] = await Promise.all([
-        vehicleAPI.getVariants(),
-        vehicleAPI.getColors(),
+        publicVehicleAPI.getVariants(),
+        publicVehicleAPI.getColors(),
       ]);
       setVariants(variantsRes.data || []);
       setColors(colorsRes.data || []);
@@ -215,73 +223,50 @@ export default function CreateOrderFromCar({
 
     setLoading(true);
     try {
-      // Tạo order với quotation data
-      // Backend có thể yêu cầu quotation với customer, variant, color, và finalPrice
-      const finalPrice = orderForm.price ? Number(orderForm.price) : null;
-      
+      // Payload theo cấu trúc PublicOrderController
       const orderPayload = {
-        customerId: customerId,
-        variantId: Number(orderForm.variantId),
-        colorId: orderForm.colorId ? Number(orderForm.colorId) : null,
-        finalPrice: finalPrice,
+        customerId: customerId || null, // Optional - UUID string
+        variantId: Number(orderForm.variantId), // Nếu không có inventoryId
+        colorId: orderForm.colorId ? Number(orderForm.colorId) : null, // Nếu không có inventoryId
+        totalAmount: orderForm.price ? Number(orderForm.price) : null,
+        depositAmount: orderForm.depositAmount ? Number(orderForm.depositAmount) : null,
+        paymentMethod: orderForm.paymentMethod || "cash",
         notes: orderForm.notes || "",
-        status: "PENDING",
       };
 
-      // Thử tạo order với cấu trúc đơn giản trước
-      // Nếu backend yêu cầu quotation object, sẽ cần điều chỉnh
-      await orderAPI.createOrder(orderPayload);
+      console.log("📤 Payload tạo đơn hàng (Public API):", JSON.stringify(orderPayload, null, 2));
+      
+      // Sử dụng Public Order API (không cần đăng nhập)
+      const orderResponse = await publicOrderAPI.createOrder(orderPayload);
+      console.log("✅ Đơn hàng đã được tạo thành công:", orderResponse.data);
+      
+      // Lưu orderNumber và orderId từ response
+      const createdOrder = orderResponse.data;
+      setOrderNumber(createdOrder.orderNumber);
+      setOrderId(createdOrder.orderId);
+      
+      // Lưu vào localStorage để có thể track sau
+      if (createdOrder.orderNumber) {
+        localStorage.setItem('lastOrderNumber', createdOrder.orderNumber);
+      }
+      if (createdOrder.orderId) {
+        localStorage.setItem('lastOrderId', createdOrder.orderId);
+      }
+      
       setSuccess(true);
       
-      // Đóng modal sau 2 giây
+      // Đóng modal sau 3 giây để user có thể thấy orderNumber
       setTimeout(() => {
         onClose();
-        // Refresh trang quản lý khách hàng nếu cần
-        // Không reload toàn bộ trang, chỉ refresh nếu đang ở trang Customer
-        if (window.location.pathname.includes("customer")) {
-          window.location.reload();
-        }
-      }, 2000);
+      }, 3000);
     } catch (err) {
-      console.error("Lỗi khi tạo đơn hàng:", err);
-      console.error("Error response:", err.response?.data);
-      
-      // Thử với cấu trúc quotation nếu lỗi
-      if (err.response?.status === 400) {
-        try {
-          // Thử tạo với quotation object
-          const quotationPayload = {
-            quotation: {
-              customerId: customerId,
-              variantId: Number(orderForm.variantId),
-              colorId: orderForm.colorId ? Number(orderForm.colorId) : null,
-              finalPrice: orderForm.price ? Number(orderForm.price) : null,
-              notes: orderForm.notes || "",
-            },
-            status: "PENDING",
-          };
-          await orderAPI.createOrder(quotationPayload);
-          setSuccess(true);
-          setTimeout(() => {
-            onClose();
-            if (window.location.pathname.includes("customer")) {
-              window.location.reload();
-            }
-          }, 2000);
-        } catch (err2) {
-          setError(
-            err2.response?.data?.message ||
-              err2.response?.data?.error ||
-              "Không thể tạo đơn hàng! Vui lòng kiểm tra lại thông tin."
-          );
-        }
-      } else {
-        setError(
-          err.response?.data?.message ||
-            err.response?.data?.error ||
-            "Không thể tạo đơn hàng!"
-        );
-      }
+      console.error("❌ Lỗi khi tạo đơn hàng:", err);
+      console.error("❌ Error response:", err.response?.data);
+      setError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Không thể tạo đơn hàng! Vui lòng kiểm tra lại thông tin."
+      );
     } finally {
       setLoading(false);
     }
@@ -308,9 +293,67 @@ export default function CreateOrderFromCar({
 
         {success ? (
           <div className="success-message">
-            <h3>✅ Thành công!</h3>
-            <p>Đã tạo khách hàng và đơn hàng thành công.</p>
-            <p>Khách hàng đã được thêm vào danh sách quản lý khách hàng.</p>
+            <h3>✅ Đơn hàng đã được tạo thành công!</h3>
+            {orderNumber && (
+              <div style={{ marginTop: '15px', padding: '15px', background: '#f0f8ff', borderRadius: '8px' }}>
+                <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#0066cc' }}>
+                  📦 Số đơn hàng của bạn: <span style={{ color: '#004499' }}>{orderNumber}</span>
+                </p>
+                <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
+                  Vui lòng lưu số đơn hàng này để theo dõi đơn hàng sau.
+                </p>
+                <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {orderNumber && (
+                    <button 
+                      onClick={async () => {
+                        try {
+                          const trackRes = await publicOrderAPI.trackOrder(orderNumber);
+                          alert(`Trạng thái đơn hàng: ${trackRes.data.status}\nTổng tiền: ${trackRes.data.totalAmount?.toLocaleString('vi-VN')} ₫`);
+                        } catch (err) {
+                          alert("Không thể theo dõi đơn hàng: " + (err.response?.data?.error || err.message));
+                        }
+                      }}
+                      style={{ 
+                        padding: '8px 16px', 
+                        background: '#0066cc', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔍 Theo dõi đơn hàng
+                    </button>
+                  )}
+                  {orderId && (
+                    <button 
+                      onClick={async () => {
+                        try {
+                          const detailRes = await publicOrderAPI.getOrder(orderId);
+                          const order = detailRes.data;
+                          alert(`Chi tiết đơn hàng:\nSố đơn: ${order.orderNumber}\nTrạng thái: ${order.status}\nTổng tiền: ${order.totalAmount?.toLocaleString('vi-VN')} ₫`);
+                        } catch (err) {
+                          alert("Không thể xem chi tiết: " + (err.response?.data?.error || err.message));
+                        }
+                      }}
+                      style={{ 
+                        padding: '8px 16px', 
+                        background: '#28a745', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      👁️ Xem chi tiết
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            <p style={{ marginTop: '15px', fontSize: '14px', color: '#28a745', fontWeight: 'bold' }}>
+              ✨ Đơn hàng đã được ghi nhận thành công!
+            </p>
           </div>
         ) : (
           <>
@@ -492,19 +535,54 @@ export default function CreateOrderFromCar({
                       ))}
                     </select>
                   </label>
-                  <input
-                    type="number"
-                    placeholder="Giá (VNĐ)"
-                    value={orderForm.price}
-                    onChange={(e) =>
-                      setOrderForm({
-                        ...orderForm,
-                        price: e.target.value,
-                      })
-                    }
-                  />
+                  <label>
+                    Tổng tiền (VNĐ) *
+                    <input
+                      type="number"
+                      placeholder="1200000000"
+                      value={orderForm.price}
+                      onChange={(e) =>
+                        setOrderForm({
+                          ...orderForm,
+                          price: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </label>
+                  <label>
+                    Tiền đặt cọc (VNĐ) (Tùy chọn)
+                    <input
+                      type="number"
+                      placeholder="120000000"
+                      value={orderForm.depositAmount}
+                      onChange={(e) =>
+                        setOrderForm({
+                          ...orderForm,
+                          depositAmount: e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Phương thức thanh toán
+                    <select
+                      value={orderForm.paymentMethod}
+                      onChange={(e) =>
+                        setOrderForm({
+                          ...orderForm,
+                          paymentMethod: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="cash">Tiền mặt</option>
+                      <option value="bank_transfer">Chuyển khoản</option>
+                      <option value="credit_card">Thẻ tín dụng</option>
+                      <option value="installment">Trả góp</option>
+                    </select>
+                  </label>
                   <textarea
-                    placeholder="Ghi chú"
+                    placeholder="Ghi chú đơn hàng"
                     value={orderForm.notes}
                     onChange={(e) =>
                       setOrderForm({

@@ -6,7 +6,9 @@ export const ROLE_NAMES = {
   EVM_STAFF: "Nhân viên EVM",
   EVM_MANAGER: "Quản lý EVM",
   MANAGER: "Quản lý đại lý",
-  STAFF: "Nhân viên đại lý"
+  DEALER_MANAGER: "Quản lý đại lý", // Map DEALER_MANAGER -> Quản lý đại lý
+  STAFF: "Nhân viên đại lý",
+  DEALER_STAFF: "Nhân viên đại lý" // Map DEALER_STAFF -> Nhân viên đại lý
 };
 
 // Menu items cho Admin (có đầy đủ quyền)
@@ -172,6 +174,7 @@ export const getMenuItemsByRole = (role) => {
     case "EVM_STAFF":
       return evmStaffMenuItems;
     case "MANAGER":
+    case "DEALER_MANAGER": // Xử lý cả DEALER_MANAGER
     case "STAFF":
     case "DEALER_STAFF": // Xử lý cả DEALER_STAFF
       return dealerMenuItems;

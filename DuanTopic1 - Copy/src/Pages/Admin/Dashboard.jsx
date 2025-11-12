@@ -1,121 +1,274 @@
-// Dashboard.jsx
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faCartShopping,
-  faUser,
-  faCar,
-  faMoneyBill,
-  faCircleExclamation,
-} from '@fortawesome/free-solid-svg-icons';
+import './Dashboard.css';
+import { FaShoppingCart, FaUsers, FaCar, FaMoneyBillWave, FaExclamationCircle, FaSpinner, FaArrowUp, FaArrowDown, FaClock } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Alert } from 'react-bootstrap';
 import {
   customerAPI,
   orderAPI,
   warehouseAPI,
-} from "../../services/API.js"; 
+} from "../../services/API.js";
 
 export default function Dashboard() {
-  // ------------------ STATE ------------------
   const [orderCount, setOrderCount] = useState(0);
   const [customerCount, setCustomerCount] = useState(0);
   const [vehicleCount, setVehicleCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [previousStats, setPreviousStats] = useState({});
 
-  // ------------------ FETCH DATA ------------------
   useEffect(() => {
     const fetchAll = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const [orders, customers, warehouses] = await Promise.all([
           orderAPI.getOrders(),
           customerAPI.getCustomers(),
           warehouseAPI.getWarehouses(),
         ]);
 
-        setOrderCount(orders.data.length);
-        setCustomerCount(customers.data.length);
-        setVehicleCount(warehouses.data.length);
+        const newOrderCount = orders.data?.length || 0;
+        const newCustomerCount = customers.data?.length || 0;
+        const newVehicleCount = warehouses.data?.length || 0;
 
-        const pending = orders.data.filter(o => o.status === 'PENDING');
+        // Save previous stats for comparison
+        setPreviousStats({
+          orders: orderCount,
+          customers: customerCount,
+          vehicles: vehicleCount,
+        });
+
+        setOrderCount(newOrderCount);
+        setCustomerCount(newCustomerCount);
+        setVehicleCount(newVehicleCount);
+
+        const pending = orders.data?.filter(o => 
+          o.status?.toLowerCase().includes('pending') || 
+          o.status?.toLowerCase().includes('chờ')
+        ) || [];
         setPendingCount(pending.length);
 
-        const recent = orders.data.sort((a, b) => b.id - a.id).slice(0, 2);
+        // Sort by orderDate instead of id
+        const recent = orders.data
+          ?.filter(o => o.orderDate)
+          .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+          .slice(0, 5) || [];
         setRecentOrders(recent);
       } catch (err) {
         console.error('❌ Lỗi khi tải dữ liệu dashboard:', err);
+        setError('Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchAll();
   }, []);
 
+  // Calculate trend (up/down/stable)
+  const getTrend = (current, previous) => {
+    if (!previous || previous === 0) return 'stable';
+    if (current > previous) return 'up';
+    if (current < previous) return 'down';
+    return 'stable';
+  };
 
-  // ------------------ DASHBOARD CARDS ------------------
   const statsList = [
-    { id: 1, icon: faCartShopping, color: '#3b82f6', bg: '#e0ecff', title: 'Đơn hàng', value: orderCount },
-    { id: 2, icon: faUser, color: '#16a34a', bg: '#dcfce7', title: 'Khách hàng', value: customerCount },
-    { id: 3, icon: faCar, color: '#9333ea', bg: '#f3e8ff', title: 'Xe trong kho', value: vehicleCount },
-    { id: 4, icon: faMoneyBill, color: '#f59e0b', bg: '#fef3c7', title: 'Doanh thu', value: '0.0M VNĐ' },
+    { 
+      id: 1, 
+      icon: FaShoppingCart, 
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      bg: '#e0e7ff',
+      title: 'Tổng đơn hàng', 
+      value: orderCount,
+      trend: getTrend(orderCount, previousStats.orders),
+      suffix: ' đơn'
+    },
+    { 
+      id: 2, 
+      icon: FaUsers, 
+      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      bg: '#d1fae5',
+      title: 'Khách hàng', 
+      value: customerCount,
+      trend: getTrend(customerCount, previousStats.customers),
+      suffix: ' người'
+    },
+    { 
+      id: 3, 
+      icon: FaCar, 
+      gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+      bg: '#ede9fe',
+      title: 'Xe trong kho', 
+      value: vehicleCount,
+      trend: getTrend(vehicleCount, previousStats.vehicles),
+      suffix: ' xe'
+    },
+    { 
+      id: 4, 
+      icon: FaMoneyBillWave, 
+      gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      bg: '#fef3c7',
+      title: 'Doanh thu tháng', 
+      value: '0',
+      trend: 'stable',
+      suffix: ' VNĐ',
+      isMoney: true
+    },
   ];
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-  // ------------------ JSX ------------------
+  const getStatusBadge = (status) => {
+    const statusLower = status?.toLowerCase() || '';
+    if (statusLower.includes('pending') || statusLower.includes('chờ')) return 'status-pending';
+    if (statusLower.includes('confirmed') || statusLower.includes('xác nhận')) return 'status-confirmed';
+    if (statusLower.includes('completed') || statusLower.includes('hoàn tất')) return 'status-completed';
+    return 'status-default';
+  };
+
   return (
-    <Container fluid>
-      <h1 className="mb-4">Dashboard</h1>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">
+            <span className="title-icon">📊</span>
+            Dashboard
+          </h1>
+          <p className="dashboard-subtitle">Tổng quan hệ thống quản lý</p>
+        </div>
+        <div className="dashboard-time">
+          {new Date().toLocaleDateString('vi-VN', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}
+        </div>
+      </div>
 
-      {/* Stats Cards */}
-      <Row className="mb-4">
-        {statsList.map((item) => (
-          <Col md={3} key={item.id} className="mb-3">
-            <Card className="h-100 shadow-sm">
-              <Card.Body>
-                <div className="d-flex align-items-center">
-                  <div 
-                    className="rounded p-3 me-3"
-                    style={{ background: item.bg, color: item.color }}
-                  >
-                    <FontAwesomeIcon icon={item.icon} size="2x" />
-                  </div>
-                  <div>
-                    <div className="h3 mb-0">{item.value}</div>
-                    <div className="text-muted">{item.title}</div>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Notice */}
-      {pendingCount > 0 && (
-        <Alert variant="warning" className="mb-4">
-          <FontAwesomeIcon icon={faCircleExclamation} className="me-2" />
-          {pendingCount} đơn hàng đang chờ xử lý
-        </Alert>
+      {/* Error State */}
+      {error && (
+        <div className="error-banner">
+          <FaExclamationCircle />
+          <span>{error}</span>
+        </div>
       )}
 
-      {/* Recent Orders */}
-      <Card className="shadow-sm">
-        <Card.Header>
-          <h5 className="mb-0">Hoạt động gần đây</h5>
-        </Card.Header>
-        <Card.Body>
-          {recentOrders.length > 0 ? (
-            <ul className="list-unstyled mb-0">
-              {recentOrders.map((o) => (
-                <li key={o.orderId} className="mb-2">
-                  Đơn #{o.orderNumber} - {o.status}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted mb-0">Không có đơn hàng gần đây</p>
+      {/* Loading State */}
+      {loading ? (
+        <div className="loading-container">
+          <FaSpinner className="spinner" />
+          <p>Đang tải dữ liệu dashboard...</p>
+        </div>
+      ) : (
+        <>
+          {/* Stats Cards */}
+          <div className="stats-grid">
+            {statsList.map((stat, index) => {
+              const Icon = stat.icon;
+              const TrendIcon = stat.trend === 'up' ? FaArrowUp : stat.trend === 'down' ? FaArrowDown : null;
+              
+              return (
+                <div 
+                  key={stat.id} 
+                  className="stat-card"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="stat-card-header">
+                    <div 
+                      className="stat-icon-box"
+                      style={{ background: stat.bg }}
+                    >
+                      <Icon className="stat-icon" style={{ color: stat.gradient.includes('667eea') ? '#667eea' : stat.gradient.includes('10b981') ? '#10b981' : stat.gradient.includes('8b5cf6') ? '#8b5cf6' : '#f59e0b' }} />
+                    </div>
+                    {TrendIcon && (
+                      <div className={`stat-trend stat-trend-${stat.trend}`}>
+                        <TrendIcon />
+                      </div>
+                    )}
+                  </div>
+                  <div className="stat-content">
+                    <div className="stat-value">
+                      {stat.isMoney 
+                        ? `${parseInt(stat.value).toLocaleString('vi-VN')}${stat.suffix}`
+                        : `${stat.value.toLocaleString('vi-VN')}${stat.suffix}`
+                      }
+                    </div>
+                    <div className="stat-title">{stat.title}</div>
+                  </div>
+                  <div className="stat-card-footer">
+                    <div className="stat-indicator" style={{ background: stat.gradient }}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Notice Banner */}
+          {pendingCount > 0 && (
+            <div className="notice-banner">
+              <FaExclamationCircle className="notice-icon" />
+              <div className="notice-content">
+                <strong>{pendingCount} đơn hàng</strong> đang chờ xử lý
+              </div>
+              <button className="notice-action">Xem ngay</button>
+            </div>
           )}
-        </Card.Body>
-      </Card>
-    </Container>
+
+          {/* Recent Orders */}
+          <div className="recent-orders-card">
+            <div className="card-header">
+              <h3 className="card-title">
+                <FaClock className="card-title-icon" />
+                Hoạt động gần đây
+              </h3>
+            </div>
+            <div className="card-body">
+              {recentOrders.length > 0 ? (
+                <div className="orders-list">
+                  {recentOrders.map((order) => (
+                    <div key={order.orderId} className="order-item">
+                      <div className="order-info">
+                        <div className="order-number">#{order.orderNumber}</div>
+                        <div className="order-meta">
+                          {order.quotation?.customer && (
+                            <span className="order-customer">
+                              {order.quotation.customer.firstName} {order.quotation.customer.lastName}
+                            </span>
+                          )}
+                          <span className="order-date">{formatDate(order.orderDate)}</span>
+                        </div>
+                      </div>
+                      <div className="order-status">
+                        <span className={`status-badge ${getStatusBadge(order.status)}`}>
+                          {order.status || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state-small">
+                  <p>Không có đơn hàng gần đây</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

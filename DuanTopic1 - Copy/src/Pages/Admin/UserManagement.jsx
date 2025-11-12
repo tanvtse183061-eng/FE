@@ -401,9 +401,7 @@ export default function UserManagement() {
           firstName: firstName,
           lastName: lastName,
           phone: formData.phone || "",
-          address: "",
           role: formData.role,
-          userType: formData.role,
           isActive: true,
         };
 
@@ -420,13 +418,11 @@ export default function UserManagement() {
 
         if (formData.password && formData.password.trim() !== "") {
           userData.password = formData.password;
-          userData.rawPassword = formData.password;
         } else {
           const tempPassword =
             Math.random().toString(36).slice(-8) +
             Math.random().toString(36).slice(-8).toUpperCase();
           userData.password = tempPassword;
-          userData.rawPassword = tempPassword;
         }
 
         console.log(

@@ -3,7 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
-import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
+import CreateOrder3Steps from "../CreateOrderFromCar/CreateOrder3Steps";
 
 // Import ảnh xe VinFast VF3 các màu
 import anhVang from "../../assets/cars/vinfastvf3-yellow.png";
@@ -45,19 +45,14 @@ export default function Vinfast3() {
   };
 
   const handleImageClick = () => {
-    if (isDealerStaff) {
-      // Nếu là DealerStaff, mở modal tạo đơn hàng
-      setShowOrderModal(true);
-    } else {
-      // Nếu không phải DealerStaff, mở modal liên hệ
-      setShowModal(true);
-    }
+    // Tất cả user đều có thể tạo đơn hàng (Public API không cần đăng nhập)
+    setShowOrderModal(true);
   };
 
   // Lấy màu hiện tại từ index
   const getCurrentColor = () => {
-    if (index === 0) return "Vàng";
-    return carImages[index - 1]?.color || colorNames[index] || "";
+    // index 0 = Vàng, index 1 = Xanh dương, index 2 = Xám đậm, etc.
+    return colorNames[index] || carImages[index - 1]?.color || "";
   };
 
   const closeModal = () => {
@@ -91,7 +86,7 @@ export default function Vinfast3() {
         </div>
         <div className="thumbnail-row">
           {[anhVang, anhXanhDuong, anhXamDam, anhXam, anhXanhNhat, anhHong, anhTim, anhDo, anhTrang].map((car, i) => (
-            <img key={i} src={car} alt="color option" onClick={() => setIndex(i - 1 >= 0 ? i - 1 : 0)} className={`thumbnail-img ${index === i - 1 ? "active" : ""}`} />
+            <img key={i} src={car} alt="color option" onClick={() => setIndex(i)} className={`thumbnail-img ${index === i ? "active" : ""}`} />
           ))}
         </div>
         {showModal && !isDealerStaff && (
@@ -108,8 +103,9 @@ export default function Vinfast3() {
           </div>
         )}
         
-        {showOrderModal && isDealerStaff && (
-          <CreateOrderFromCar
+        {/* Modal tạo đơn hàng 3 bước - Tất cả user đều có thể tạo (Public API) */}
+        {showOrderModal && (
+          <CreateOrder3Steps
             show={showOrderModal}
             onClose={() => setShowOrderModal(false)}
             carName="VinFast VF 3"

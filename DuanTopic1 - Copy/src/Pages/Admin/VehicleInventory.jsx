@@ -65,9 +65,8 @@ export default function VehicleInventory() {
   // 🔹 Load data khi mở trang
   const fetchAll = async () => {
     try {
-      // Thử cả 2 API để lấy warehouses
-      const [vehicleRes, variantRes, colorRes, warehouseRes1, warehouseRes2] = await Promise.all([
-        inventoryAPI.getInventory(),
+      // Load variants, colors, warehouses trước
+      const [variantRes, colorRes, warehouseRes1, warehouseRes2] = await Promise.all([
         publicVehicleAPI.getVariants(),
         publicVehicleAPI.getColors(),
         warehouseAPI.getWarehouses().catch(() => ({ data: [] })),
@@ -77,18 +76,122 @@ export default function VehicleInventory() {
       // Chọn API nào có dữ liệu
       const warehouseRes = warehouseRes1?.data?.length > 0 ? warehouseRes1 : warehouseRes2;
 
+      setVariants(variantRes.data || []);
+      setColors(colorRes.data || []);
+      setWarehouses(warehouseRes?.data || []);
+
       // 🔍 Debug: Log dữ liệu để kiểm tra
       console.log("📦 Variants:", variantRes.data);
       console.log("🎨 Colors:", colorRes.data);
       console.log("🏭 Warehouses:", warehouseRes?.data);
 
-      setVehicles(vehicleRes.data || []);
-      setVariants(variantRes.data || []);
-      setColors(colorRes.data || []);
-      setWarehouses(warehouseRes?.data || []);
+      // Thử nhiều cách lấy inventory
+      let vehicleRes = null;
+      let vehiclesList = [];
+      
+      // Cách 1: Thử public API - available inventory (theo tài liệu)
+      try {
+        console.log("🔍 Thử 1: Public API - getAvailableInventory");
+        vehicleRes = await publicVehicleAPI.getAvailableInventory();
+        console.log("✅ Thành công với getAvailableInventory:", vehicleRes);
+        
+        // Xử lý response
+        if (Array.isArray(vehicleRes.data)) {
+          vehiclesList = vehicleRes.data;
+        } else if (Array.isArray(vehicleRes.data?.data)) {
+          vehiclesList = vehicleRes.data.data;
+        } else if (Array.isArray(vehicleRes)) {
+          vehiclesList = vehicleRes;
+        }
+        
+        console.log("📊 Từ getAvailableInventory nhận được:", vehiclesList.length, "xe");
+        
+        // Nếu mảng rỗng, thử endpoint khác
+        if (vehiclesList.length === 0) {
+          console.warn("⚠️ getAvailableInventory trả về mảng rỗng, thử endpoint khác");
+          throw new Error("Empty array from getAvailableInventory");
+        }
+      } catch (err1) {
+        console.warn("⚠️ Lỗi với getAvailableInventory hoặc mảng rỗng:", err1.response?.status, err1.response?.data);
+        
+        // Cách 2: Thử public API - tất cả inventory
+        try {
+          console.log("🔍 Thử 2: Public API - getInventory (/api/public/vehicle-inventory)");
+          vehicleRes = await publicVehicleAPI.getInventory();
+          console.log("✅ Thành công với getInventory:", vehicleRes);
+          
+          // Xử lý response
+          if (Array.isArray(vehicleRes.data)) {
+            vehiclesList = vehicleRes.data;
+          } else if (Array.isArray(vehicleRes.data?.data)) {
+            vehiclesList = vehicleRes.data.data;
+          } else if (Array.isArray(vehicleRes)) {
+            vehiclesList = vehicleRes;
+          }
+          
+          console.log("📊 Từ getInventory nhận được:", vehiclesList.length, "xe");
+          
+          // Filter chỉ lấy available
+          if (vehiclesList.length > 0) {
+            vehiclesList = vehiclesList.filter(v => {
+              const status = (v.status || "").toLowerCase();
+              return status === "available" || status === "AVAILABLE";
+            });
+            console.log("📊 Sau khi filter available:", vehiclesList.length, "xe");
+          }
+        } catch (err2) {
+          console.warn("⚠️ Lỗi với public getInventory:", err2.response?.status, err2.response?.data);
+          
+          // Cách 3: Thử authenticated API (nếu có token)
+          const token = localStorage.getItem('token');
+          if (token) {
+            try {
+              console.log("🔍 Thử 3: Authenticated API - inventoryAPI.getInventory");
+              vehicleRes = await inventoryAPI.getInventory();
+              console.log("✅ Thành công với inventoryAPI.getInventory:", vehicleRes);
+              
+              // Xử lý response
+              if (Array.isArray(vehicleRes.data)) {
+                vehiclesList = vehicleRes.data;
+              } else if (Array.isArray(vehicleRes.data?.data)) {
+                vehiclesList = vehicleRes.data.data;
+              } else if (Array.isArray(vehicleRes)) {
+                vehiclesList = vehicleRes;
+              }
+              
+              console.log("📊 Từ inventoryAPI.getInventory nhận được:", vehiclesList.length, "xe");
+              
+              // Filter chỉ lấy available
+              if (vehiclesList.length > 0) {
+                vehiclesList = vehiclesList.filter(v => {
+                  const status = (v.status || "").toLowerCase();
+                  return status === "available" || status === "AVAILABLE";
+                });
+                console.log("📊 Sau khi filter available:", vehiclesList.length, "xe");
+              }
+            } catch (err3) {
+              console.error("❌ Lỗi với cả 3 cách:", err3);
+              throw err3;
+            }
+          } else {
+            throw err2;
+          }
+        }
+      }
+
+      console.log("📊 Tổng số inventory nhận được:", vehiclesList.length);
+      if (vehiclesList.length > 0) {
+        console.log("📊 Sample inventory item:", vehiclesList[0]);
+        console.log("📊 Sample inventory keys:", Object.keys(vehiclesList[0]));
+      } else {
+        console.warn("⚠️ Không có xe nào trong inventory!");
+      }
+
+      setVehicles(vehiclesList);
     } catch (error) {
       console.error("❌ Lỗi tải dữ liệu:", error);
       console.error("❌ Error response:", error.response?.data);
+      setError("Không thể tải danh sách xe. Vui lòng thử lại sau.");
     }
   };
 
@@ -105,11 +208,40 @@ export default function VehicleInventory() {
         return;
       }
       try {
-        const allVehicles = await inventoryAPI.getInventory();
-        const filtered = (allVehicles.data || []).filter(v => 
+        // Thử lấy từ public API trước
+        let allVehicles = null;
+        try {
+          allVehicles = await publicVehicleAPI.getAvailableInventory();
+        } catch (err1) {
+          try {
+            allVehicles = await publicVehicleAPI.getInventory();
+          } catch (err2) {
+            const token = localStorage.getItem('token');
+            if (token) {
+              allVehicles = await inventoryAPI.getInventory();
+            } else {
+              throw err2;
+            }
+          }
+        }
+
+        // Xử lý response structure
+        let vehiclesList = [];
+        if (allVehicles) {
+          if (Array.isArray(allVehicles.data)) {
+            vehiclesList = allVehicles.data;
+          } else if (Array.isArray(allVehicles.data?.data)) {
+            vehiclesList = allVehicles.data.data;
+          } else if (Array.isArray(allVehicles)) {
+            vehiclesList = allVehicles;
+          }
+        }
+
+        const filtered = vehiclesList.filter(v => 
           v.licensePlate?.toLowerCase().includes(q.toLowerCase()) ||
           v.vin?.toLowerCase().includes(q.toLowerCase()) ||
-          v.chassisNumber?.toLowerCase().includes(q.toLowerCase())
+          v.chassisNumber?.toLowerCase().includes(q.toLowerCase()) ||
+          (v.inventoryId && String(v.inventoryId).toLowerCase().includes(q.toLowerCase()))
         );
         setVehicles(filtered);
       } catch (err) {
@@ -280,34 +412,48 @@ export default function VehicleInventory() {
           </thead>
           <tbody>
             {vehicles.length > 0 ? (
-              vehicles.map((v) => (
-                <tr key={v.id}>
-                  <td>{v.vin || "—"}</td>
-                  <td>{v.licensePlate || "—"}</td>
-                  <td>{getVariantName(v.variantId)}</td>
-                  <td>{getColorName(v.colorId)}</td>
-                  <td>{getWarehouseName(v.warehouseId)}</td>
-                  <td>{v.price ? `${Number(v.price).toLocaleString()} đ` : "—"}</td>
-                  <td>
-                    <span style={{
-                      background: v.status === 'AVAILABLE' ? "#dcfce7" : "#fee2e2",
-                      color: v.status === 'AVAILABLE' ? "#16a34a" : "#dc2626",
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                    }}>
-                      {v.status || "—"}
-                    </span>
-                  </td>
-                  <td className="action-buttons">
-                    <button onClick={() => handleView(v)} className="icon-btn view"><FaEye /></button>
-                    <button onClick={() => handleEdit(v)} className="icon-btn edit"><FaPen /></button>
-                    <button onClick={() => handleDelete(v.id)} className="icon-btn delete"><FaTrash /></button>
-                  </td>
-                </tr>
-              ))
+              vehicles.map((v) => {
+                const vehicleId = v.inventoryId || v.id;
+                const sellingPrice = v.sellingPrice || v.price || 0;
+                const status = (v.status || "").toUpperCase();
+                
+                return (
+                  <tr key={vehicleId}>
+                    <td>{v.vin || "—"}</td>
+                    <td>{v.licensePlate || "—"}</td>
+                    <td>{getVariantName(v.variantId)}</td>
+                    <td>{getColorName(v.colorId)}</td>
+                    <td>{getWarehouseName(v.warehouseId)}</td>
+                    <td>{sellingPrice ? `${Number(sellingPrice).toLocaleString('vi-VN')} đ` : "—"}</td>
+                    <td>
+                      <span style={{
+                        background: status === 'AVAILABLE' ? "#dcfce7" : "#fee2e2",
+                        color: status === 'AVAILABLE' ? "#16a34a" : "#dc2626",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: "500",
+                      }}>
+                        {status || "—"}
+                      </span>
+                    </td>
+                    <td className="action-buttons">
+                      <button onClick={() => handleView(v)} className="icon-btn view"><FaEye /></button>
+                      <button onClick={() => handleEdit(v)} className="icon-btn edit"><FaPen /></button>
+                      <button onClick={() => handleDelete(vehicleId)} className="icon-btn delete"><FaTrash /></button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan="8" style={{ textAlign: "center" }}>Không có dữ liệu</td>
+                <td colSpan="8" style={{ textAlign: "center", padding: "40px" }}>
+                  {error ? (
+                    <div style={{ color: "#dc2626" }}>{error}</div>
+                  ) : (
+                    "Không có dữ liệu"
+                  )}
+                </td>
               </tr>
             )}
           </tbody>

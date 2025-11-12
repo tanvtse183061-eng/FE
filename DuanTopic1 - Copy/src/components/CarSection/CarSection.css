@@ -60,7 +60,8 @@
 .vf7,
 .vf3,
 .macanxanh,
-.macantim4 {
+.macantim4,
+.car-card {
   background: white;
   border-radius: 16px;
   padding: 0;
@@ -78,7 +79,8 @@
 .vf7::before,
 .vf3::before,
 .macanxanh::before,
-.macantim4::before {
+.macantim4::before,
+.car-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -100,7 +102,8 @@
 .vf7:hover,
 .vf3:hover,
 .macanxanh:hover,
-.macantim4:hover {
+.macantim4:hover,
+.car-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
@@ -112,7 +115,8 @@
 .vf7:hover::before,
 .vf3:hover::before,
 .macanxanh:hover::before,
-.macantim4:hover::before {
+.macantim4:hover::before,
+.car-card:hover::before {
   opacity: 1;
 }
 
@@ -132,7 +136,9 @@
 .macanxanh>a,
 .macanxanh>img,
 .macantim4>a,
-.macantim4>img {
+.macantim4>img,
+.car-card>a,
+.car-card>img {
   display: block;
   width: 100%;
   position: relative;
@@ -157,11 +163,13 @@
 .vf7:hover img,
 .vf3:hover img,
 .macanxanh:hover img,
-.macantim4:hover img {
+.macantim4:hover img,
+.car-card:hover img {
   transform: scale(1.08);
 }
 
 /* Car Info Section */
+.car-card .name-car,
 .herio .name-car,
 .limo .name-car,
 .vf6 .name-car,
@@ -170,6 +178,7 @@
 .vf3 .name-car,
 .macanxanh .name-car,
 .macantim4 .name-car,
+.car-card .price-car,
 .herio .price-car,
 .limo .price-car,
 .vf6 .price-car,

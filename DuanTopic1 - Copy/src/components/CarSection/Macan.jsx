@@ -3,7 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
-import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
+import CreateOrder3Steps from "../CreateOrderFromCar/CreateOrder3Steps";
 
 import anhXanhDuong from "../../assets/cars/Macanxanh.png";
 import anhXanhLa from "../../assets/cars/Macan4-green.png";
@@ -34,16 +34,13 @@ export default function Macan() {
   };
 
   const handleImageClick = () => {
-    if (isDealerStaff) {
-      setShowOrderModal(true);
-    } else {
-      setShowModal(true);
-    }
+    // Tất cả user đều có thể tạo đơn hàng (Public API không cần đăng nhập)
+    setShowOrderModal(true);
   };
 
   const getCurrentColor = () => {
-    if (index === 0) return "Xanh dương";
-    return carImages[index - 1]?.color || colorNames[index] || "";
+    // index 0 = Xanh dương, index 1 = Xanh lá, index 2 = Cam, index 3 = Tím
+    return colorNames[index] || carImages[index - 1]?.color || "";
   };
 
   const closeModal = () => {
@@ -77,7 +74,7 @@ export default function Macan() {
         </div>
         <div className="thumbnail-row">
           {[anhXanhDuong, anhXanhLa, anhCam, anhTim].map((car, i) => (
-            <img key={i} src={car} alt="color option" onClick={() => setIndex(i - 1 >= 0 ? i - 1 : 0)} className={`thumbnail-img ${index === i - 1 ? "active" : ""}`} />
+            <img key={i} src={car} alt="color option" onClick={() => setIndex(i)} className={`thumbnail-img ${index === i ? "active" : ""}`} />
           ))}
         </div>
         {showModal && !isDealerStaff && (
@@ -94,8 +91,9 @@ export default function Macan() {
           </div>
         )}
         
-        {showOrderModal && isDealerStaff && (
-          <CreateOrderFromCar
+        {/* Modal tạo đơn hàng 3 bước - Tất cả user đều có thể tạo (Public API) */}
+        {showOrderModal && (
+          <CreateOrder3Steps
             show={showOrderModal}
             onClose={() => setShowOrderModal(false)}
             carName="Macan thuần điện"

@@ -29,17 +29,21 @@ const [selectedAction, setSelectedAction] = useState(null);
     const savedUser = localStorage.getItem("username");
     const savedRole = localStorage.getItem("role");
     
+    console.log("🔍 DealerManager - savedRole:", savedRole);
+    console.log("🔍 DealerManager - savedUser:", savedUser);
+    
     if (savedUser && savedRole) {
-      // Kiểm tra role có đúng với route không
-      if (savedRole !== "MANAGER") {
+      // Kiểm tra role có đúng với route không - cho phép cả MANAGER và DEALER_MANAGER
+      if (savedRole !== "MANAGER" && savedRole !== "DEALER_MANAGER") {
         // Redirect về đúng route theo role
         if (savedRole === "ADMIN") {
           navigate("/admin");
         } else if (savedRole === "EVM_STAFF") {
           navigate("/evmstaff");
-        } else if (savedRole === "STAFF") {
+        } else if (savedRole === "STAFF" || savedRole === "DEALER_STAFF") {
           navigate("/dealerstaff");
         } else {
+          console.warn("⚠️ Role không hợp lệ, redirect về login:", savedRole);
           navigate("/login");
         }
         return;
@@ -47,8 +51,11 @@ const [selectedAction, setSelectedAction] = useState(null);
       
       setUsername(savedUser);
       setUserRole(savedRole);
-      setMenuItems(getMenuItemsByRole(savedRole));
+      const menuItemsForRole = getMenuItemsByRole(savedRole);
+      console.log("✅ Menu items cho role:", savedRole, menuItemsForRole);
+      setMenuItems(menuItemsForRole);
     } else {
+      console.warn("⚠️ Không có user hoặc role, redirect về login");
       navigate("/login");
     }
   }, [navigate]);

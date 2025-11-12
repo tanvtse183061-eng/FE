@@ -3,7 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
-import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
+import CreateOrder3Steps from "../CreateOrderFromCar/CreateOrder3Steps";
 
 // Import ảnh xe VinFast VF7 các màu
 import anhXam from "../../assets/cars/vinfastvf7-gray.png"; // màu chính
@@ -39,16 +39,13 @@ export default function Vinfast7() {
   };
 
   const handleImageClick = () => {
-    if (isDealerStaff) {
-      setShowOrderModal(true);
-    } else {
-      setShowModal(true);
-    }
+    // Tất cả user đều có thể tạo đơn hàng (Public API không cần đăng nhập)
+    setShowOrderModal(true);
   };
 
   const getCurrentColor = () => {
-    if (index === 0) return "Xám";
-    return carImages[index - 1]?.color || colorNames[index] || "";
+    // index 0 = Xám, index 1 = Đen, index 2 = Xanh dương, index 3 = Xanh lá, index 4 = Đỏ, index 5 = Trắng
+    return colorNames[index] || carImages[index - 1]?.color || "";
   };
 
   const closeModal = () => {
@@ -114,8 +111,8 @@ export default function Vinfast7() {
               key={i}
               src={car}
               alt="color option"
-              onClick={() => setIndex(i - 1 >= 0 ? i - 1 : 0)}
-              className={`thumbnail-img ${index === i - 1 ? "active" : ""}`}
+              onClick={() => setIndex(i)}
+              className={`thumbnail-img ${index === i ? "active" : ""}`}
             />
           ))}
         </div>
@@ -139,8 +136,9 @@ export default function Vinfast7() {
           </div>
         )}
         
-        {showOrderModal && isDealerStaff && (
-          <CreateOrderFromCar
+        {/* Modal tạo đơn hàng 3 bước - Tất cả user đều có thể tạo (Public API) */}
+        {showOrderModal && (
+          <CreateOrder3Steps
             show={showOrderModal}
             onClose={() => setShowOrderModal(false)}
             carName="VinFast VF 7"

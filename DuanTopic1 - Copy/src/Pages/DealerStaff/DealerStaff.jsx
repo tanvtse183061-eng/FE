@@ -41,7 +41,8 @@ const [selectedAction, setSelectedAction] = useState(null);
           navigate("/admin");
         } else if (savedRole === "EVM_STAFF") {
           navigate("/evmstaff");
-        } else if (savedRole === "MANAGER") {
+        } else if (savedRole === "MANAGER" || savedRole === "DEALER_MANAGER") {
+          // Xử lý cả MANAGER và DEALER_MANAGER
           navigate("/dealermanager");
         } else {
           console.warn("⚠️ Role không hợp lệ, redirect về login:", savedRole);

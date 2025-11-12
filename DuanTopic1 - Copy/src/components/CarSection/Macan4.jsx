@@ -3,7 +3,7 @@ import { Carousel } from "react-bootstrap";
 import Nvabar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
 import ContactModal from "../ContactModal/ContactModal";
-import CreateOrderFromCar from "../CreateOrderFromCar/CreateOrderFromCar";
+import CreateOrder3Steps from "../CreateOrderFromCar/CreateOrder3Steps";
 
 import anhTim from "../../assets/cars/Macantim4.png";
 import anhXanhDuong from "../../assets/cars/Macan4-blue.png";
@@ -34,16 +34,13 @@ export default function Macan4() {
   };
 
   const handleImageClick = () => {
-    if (isDealerStaff) {
-      setShowOrderModal(true);
-    } else {
-      setShowModal(true);
-    }
+    // Tất cả user đều có thể tạo đơn hàng (Public API không cần đăng nhập)
+    setShowOrderModal(true);
   };
 
   const getCurrentColor = () => {
-    if (index === 0) return "Tím";
-    return carImages[index - 1]?.color || colorNames[index] || "";
+    // index 0 = Tím, index 1 = Xanh dương, index 2 = Xanh lá, index 3 = Cam
+    return colorNames[index] || carImages[index - 1]?.color || "";
   };
 
   const closeModal = () => {
@@ -77,9 +74,27 @@ export default function Macan4() {
         </div>
         <div className="thumbnail-row">
           {[anhTim, anhXanhDuong, anhXanhLa, anhCam].map((car, i) => (
-            <img key={i} src={car} alt="color option" onClick={() => setIndex(i - 1 >= 0 ? i - 1 : 0)} className={`thumbnail-img ${index === i - 1 ? "active" : ""}`} />
+            <img 
+              key={i} 
+              src={car} 
+              alt="color option" 
+              onClick={() => setIndex(i)} 
+              className={`thumbnail-img ${index === i ? "active" : ""}`} 
+            />
           ))}
         </div>
+        {/* Modal tạo đơn hàng 3 bước - Tất cả user đều có thể tạo (Public API) */}
+        {showOrderModal && (
+          <CreateOrder3Steps
+            show={showOrderModal}
+            onClose={() => setShowOrderModal(false)}
+            carName="Macan 4 thuần điện"
+            carColor={getCurrentColor()}
+            carPrice={3740000000}
+          />
+        )}
+        
+        {/* Modal liên hệ (tùy chọn - có thể giữ lại nếu cần) */}
         {showModal && !isDealerStaff && (
           <div className="contact-modal-overlay" onClick={closeModal}>
             <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
@@ -89,19 +104,23 @@ export default function Macan4() {
               <p>để được hỗ trợ tốt nhất!</p>
               <div className="contact-modal-phone"> Hotline: 1900-xxxx</div>
               <p style={{ fontSize: "16px", marginTop: "15px" }}>Hoặc đến showroom gần nhất để trải nghiệm xe</p>
-              <button className="contact-modal-button" onClick={closeModal}>Đóng</button>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <button 
+                  className="contact-modal-button" 
+                  onClick={() => {
+                    closeModal();
+                    setShowOrderModal(true);
+                  }}
+                  style={{ background: '#0066cc', color: 'white', flex: 1 }}
+                >
+                  📦 Tạo đơn hàng ngay
+                </button>
+                <button className="contact-modal-button" onClick={closeModal} style={{ flex: 1 }}>
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
-        )}
-        
-        {showOrderModal && isDealerStaff && (
-          <CreateOrderFromCar
-            show={showOrderModal}
-            onClose={() => setShowOrderModal(false)}
-            carName="Macan 4 thuần điện"
-            carColor={getCurrentColor()}
-            carPrice={3740000000}
-          />
         )}
       </div>
       <Footer />

@@ -85,25 +85,27 @@ export default function Login() {
           return;
         }
 
-        // Lưu thông tin đăng nhập
+        // Lưu thông tin đăng nhập - ưu tiên userType từ backend
+        const roleToSave = data.userType || data.role;
         localStorage.setItem("token", data.accessToken);
         localStorage.setItem("username", data.username);
-        localStorage.setItem("role", data.role);
+        localStorage.setItem("role", roleToSave);
 
-        console.log("✅ Role từ login response:", data.role);
+        console.log("✅ Role từ login response:", roleToSave);
         console.log("✅ Username:", data.username);
         
         alert("Đăng nhập thành công!");
         
         // Redirect theo role
-        const role = data.role;
+        const role = roleToSave;
         console.log("🔄 Redirect theo role:", role);
         
         if (role === "ADMIN") {
           navigate("/admin");
         } else if (role === "EVM_STAFF") {
           navigate("/evmstaff");
-        } else if (role === "MANAGER") {
+        } else if (role === "MANAGER" || role === "DEALER_MANAGER") {
+          // Xử lý cả MANAGER và DEALER_MANAGER
           navigate("/dealermanager");
         } else if (role === "STAFF" || role === "DEALER_STAFF") {
           // Xử lý cả STAFF và DEALER_STAFF

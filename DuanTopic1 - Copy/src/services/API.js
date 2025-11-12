@@ -53,7 +53,16 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
-  validate: (token) => api.post('/auth/validate', { token }),
+  validate: (token) => {
+    // Backend reads token from Authorization header, so we set it manually if provided
+    if (token) {
+      return api.post('/auth/validate', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    }
+    // If no token provided, use default interceptor behavior
+    return api.post('/auth/validate');
+  },
   logout: () => api.post('/auth/logout'),
   refresh: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
 };
@@ -137,6 +146,27 @@ export const orderAPI = {
   deleteOrder: (id) => api.delete(`/orders/${id}`),
 };
 
+// ==================== PUBLIC ORDER API (Không cần đăng nhập) ====================
+export const publicOrderAPI = {
+  createOrder: (data) => publicApi.post('/orders', data),
+  getOrder: (id) => publicApi.get(`/orders/${id}`),
+  getOrderByOrderNumber: (orderNumber) => publicApi.get(`/orders/order-number/${orderNumber}`),
+  trackOrder: (orderNumber) => publicApi.get(`/orders/track/${orderNumber}`),
+  getOrderStatus: (id) => publicApi.get(`/orders/${id}/status`),
+  cancelOrder: (id, reason) => publicApi.put(`/orders/${id}/cancel`, null, { 
+    params: reason ? { reason } : {} 
+  }),
+};
+
+// ==================== PUBLIC CUSTOMER PAYMENT API (Không cần đăng nhập) ====================
+export const publicPaymentAPI = {
+  getPayments: () => publicApi.get('/payments'),
+  getPayment: (id) => publicApi.get(`/payments/${id}`),
+  createPayment: (data) => publicApi.post('/payments', data),
+  updatePayment: (id, data) => publicApi.put(`/payments/${id}`, data),
+  deletePayment: (id) => publicApi.delete(`/payments/${id}`),
+};
+
 // ==================== WAREHOUSE API ====================
 export const warehouseAPI = {
   getWarehouses: () => api.get('/warehouses'),
@@ -150,11 +180,28 @@ export const warehouseAPI = {
 
 // ==================== PUBLIC API ====================
 export const publicVehicleAPI = {
-  getBrands: () => api.get('/vehicle/brands'),
-  getModels: () => api.get('/vehicle/models'),
-  getVariants: () => api.get('/vehicle/variants'),
-  getColors: () => api.get('/vehicle/colors'),
-  getWarehouses: () => api.get('/warehouses'), 
+  getBrands: () => publicApi.get('/brands'),
+  getModels: () => publicApi.get('/models'),
+  getVariants: () => publicApi.get('/variants'),
+  getColors: () => publicApi.get('/colors'),
+  getWarehouses: () => publicApi.get('/warehouses'),
+  // Inventory - Sử dụng đúng endpoint từ BE theo tài liệu API
+  // Lấy tất cả tồn kho: /api/public/inventory/available hoặc /api/public/vehicle-inventory
+  getInventory: () => publicApi.get('/vehicle-inventory'),
+  getAvailableInventory: () => publicApi.get('/inventory/available'), // Ưu tiên endpoint này
+  // Lấy xe theo status: /api/public/vehicle-inventory/status/{status}
+  getInventoryByStatus: (status) => publicApi.get(`/vehicle-inventory/status/${status}`),
+  // Lấy chi tiết xe: /api/public/inventory/{inventoryId} hoặc /api/public/vehicle-inventory/{inventoryId}
+  getInventoryById: (inventoryId) => publicApi.get(`/inventory/${inventoryId}`),
+  // Trang chủ - Xe nổi bật: /api/public/ hoặc /api/public/home
+  getHomePage: () => publicApi.get('/home'),
+  // Danh mục xe: /api/public/catalog
+  getCatalog: () => publicApi.get('/catalog'),
+  // Tìm kiếm: /api/public/search?keyword=...
+  search: (keyword) => publicApi.get('/search', { params: { keyword } }),
+  // Legacy endpoints (giữ lại để backward compatibility)
+  getInventoryByVariant: (variantId) => publicApi.get(`/vehicle-inventory/variant/${variantId}`),
+  getInventoryByColor: (colorId) => publicApi.get(`/vehicle-inventory/color/${colorId}`),
 };
 // ==================== DEALER API ====================
 export const dealerAPI = {
@@ -196,7 +243,7 @@ export const inventoryAPI = {
   getInventoryByManufacturingDateRange: (startDate, endDate) => 
     api.get(`/vehicle-inventory/manufacturing-date-range?startDate=${startDate}&endDate=${endDate}`),
   getInventoryByArrivalDateRange: (startDate, endDate) => 
-    api.get(`/vehicle-inventory/arrival-date-range?startDate=${startDate}&endDate=${endDate}`),
+    api.get(`/vehicle-inventory/date-range?startDate=${startDate}&endDate=${endDate}`),
   searchByVin: (vin) => api.get(`/vehicle-inventory/search/vin?vin=${vin}`),
   searchByChassisNumber: (chassisNumber) => api.get(`/vehicle-inventory/search/chassis?chassisNumber=${chassisNumber}`),
   updateInventoryStatus: (id, status) => api.put(`/vehicle-inventory/${id}/status?status=${status}`),
@@ -338,7 +385,148 @@ export const installmentScheduleAPI = {
   deleteSchedule: (id) => api.delete(`/installment-schedules/${id}`),
 };
 
+// ==================== QUOTATION API (Customer) ====================
+export const quotationAPI = {
+  getQuotations: () => api.get('/quotations'),
+  getQuotation: (id) => api.get(`/quotations/${id}`),
+  getQuotationByNumber: (number) => api.get(`/quotations/number/${number}`),
+  getQuotationsByStatus: (status) => api.get(`/quotations/status/${status}`),
+  getQuotationsByCustomer: (customerId) => api.get(`/quotations/customer/${customerId}`),
+  createQuotation: (data) => api.post('/quotations', data),
+  updateQuotation: (id, data) => api.put(`/quotations/${id}`, data),
+  deleteQuotation: (id) => api.delete(`/quotations/${id}`),
+  sendQuotation: (id) => api.put(`/quotations/${id}/send`),
+};
 
+// ==================== PUBLIC QUOTATION API ====================
+export const publicQuotationAPI = {
+  getQuotation: (id) => publicApi.get(`/quotations/${id}`),
+  acceptQuotation: (id, conditions) => {
+    // Backend uses @RequestParam, so we send as query params
+    const params = conditions ? { conditions } : {};
+    return publicApi.post(`/quotations/${id}/accept`, null, { params });
+  },
+  rejectQuotation: (id, reason, adjustmentRequest) => {
+    // Backend uses @RequestParam, so we send as query params
+    const params = {};
+    if (reason) params.reason = reason;
+    if (adjustmentRequest) params.adjustmentRequest = adjustmentRequest;
+    return publicApi.post(`/quotations/${id}/reject`, null, { params });
+  },
+};
+
+// ==================== DEALER ORDER API ====================
+export const dealerOrderAPI = {
+  getOrders: () => api.get('/dealer-orders'),
+  getOrder: (id) => api.get(`/dealer-orders/${id}`),
+  getOrderByNumber: (orderNumber) => api.get(`/dealer-orders/order-number/${orderNumber}`),
+  getOrdersByEvmStaff: (evmStaffId) => api.get(`/dealer-orders/evm-staff/${evmStaffId}`),
+  getOrdersByStatus: (status) => api.get(`/dealer-orders/status/${status}`),
+  getOrdersByDealer: (dealerId) => api.get(`/dealer-orders/dealer/${dealerId}`),
+  createDetailedOrder: (data) => api.post('/dealer-orders/create-detailed', data),
+  updateOrder: (id, data) => api.put(`/dealer-orders/${id}`, data),
+  approveOrder: (id) => api.post(`/dealer-orders/${id}/approve`),
+  rejectOrder: (id, rejectionReason) => {
+    // Backend uses @RequestParam, so we send as query params
+    return api.post(`/dealer-orders/${id}/reject`, null, { 
+      params: { rejectionReason } 
+    });
+  },
+  requestQuotation: (id, notes) => {
+    // Backend uses @RequestParam, so we send as query params
+    const params = notes ? { notes } : {};
+    return api.post(`/dealer-orders/${id}/request-quotation`, null, { params });
+  },
+  cancelOrder: (id) => api.put(`/dealer-orders/${id}/cancel`),
+  deleteOrder: (id) => api.delete(`/dealer-orders/${id}`),
+};
+
+// ==================== DEALER QUOTATION API ====================
+export const dealerQuotationAPI = {
+  getQuotations: () => api.get('/dealer-quotations'),
+  getQuotation: (id) => api.get(`/dealer-quotations/${id}`),
+  getQuotationByNumber: (number) => api.get(`/dealer-quotations/number/${number}`),
+  getQuotationsByDealer: (dealerId) => api.get(`/dealer-quotations/dealer/${dealerId}`),
+  getQuotationsByDealerOrder: (dealerOrderId) => api.get(`/dealer-quotations/dealer-order/${dealerOrderId}`),
+  getQuotationsByStatus: (status) => api.get(`/dealer-quotations/status/${status}`),
+  createQuotationFromOrder: (orderId, params) => api.post(`/dealer-quotations/from-order/${orderId}`, null, { params }),
+  sendQuotation: (id) => api.post(`/dealer-quotations/${id}/send`),
+  acceptQuotation: (id) => api.post(`/dealer-quotations/${id}/accept`),
+  rejectQuotation: (id, reason) => {
+    // Backend uses @RequestParam, so we send as query params
+    const params = reason ? { reason } : {};
+    return api.post(`/dealer-quotations/${id}/reject`, null, { params });
+  },
+  updateQuotation: (id, data) => api.put(`/dealer-quotations/${id}`, data),
+  deleteQuotation: (id) => api.delete(`/dealer-quotations/${id}`),
+};
+
+// ==================== DEALER INVOICE API ====================
+export const dealerInvoiceAPI = {
+  getInvoices: () => api.get('/dealer-invoices'),
+  getInvoice: (id) => api.get(`/dealer-invoices/${id}`),
+  getInvoiceByNumber: (invoiceNumber) => api.get(`/dealer-invoices/number/${invoiceNumber}`),
+  getInvoicesByDealerOrder: (dealerOrderId) => api.get(`/dealer-invoices/dealer-order/${dealerOrderId}`),
+  getInvoicesByDealer: (dealerId) => api.get(`/dealer-invoices/dealer/${dealerId}`),
+  getInvoicesByStatus: (status) => api.get(`/dealer-invoices/status/${status}`),
+  createInvoice: (data) => api.post('/dealer-invoices', data),
+  updateInvoice: (id, data) => api.put(`/dealer-invoices/${id}`, data),
+  updateStatus: (id, status) => api.put(`/dealer-invoices/${id}/status`, { status }),
+  deleteInvoice: (id) => api.delete(`/dealer-invoices/${id}`),
+};
+
+// ==================== DEALER PAYMENT API ====================
+export const dealerPaymentAPI = {
+  getPayments: () => api.get('/dealer-payments'),
+  getPayment: (id) => api.get(`/dealer-payments/${id}`),
+  getPaymentsByInvoice: (invoiceId) => api.get(`/dealer-payments/invoice/${invoiceId}`),
+  getPaymentsByDealer: (dealerId) => api.get(`/dealer-payments/dealer/${dealerId}`),
+  processPayment: (data) => api.post('/dealer-payments/process-payment', data),
+  updatePayment: (id, data) => api.put(`/dealer-payments/${id}`, data),
+  updateStatus: (id, status) => api.put(`/dealer-payments/${id}/status`, { status }),
+  deletePayment: (id) => api.delete(`/dealer-payments/${id}`),
+};
+
+// ==================== APPOINTMENT API ====================
+export const appointmentAPI = {
+  getAppointments: () => api.get('/appointments'),
+  getAppointment: (id) => api.get(`/appointments/${id}`),
+  getAppointmentsByCustomer: (customerId) => api.get(`/appointments/customer/${customerId}`),
+  getAppointmentsByOrder: (orderId) => api.get(`/appointments/order/${orderId}`),
+  getAppointmentsByStatus: (status) => api.get(`/appointments/status/${status}`),
+  getAppointmentsByType: (type) => api.get(`/appointments/type/${type}`),
+  createAppointment: (data) => api.post('/appointments', data),
+  updateAppointment: (id, data) => api.put(`/appointments/${id}`, data),
+  confirmAppointment: (id) => api.put(`/appointments/${id}/confirm`),
+  completeAppointment: (id) => api.put(`/appointments/${id}/complete`),
+  cancelAppointment: (id) => api.put(`/appointments/${id}/cancel`),
+  rescheduleAppointment: (id, newDate) => api.put(`/appointments/${id}/reschedule`, { appointmentDate: newDate }),
+  deleteAppointment: (id) => api.delete(`/appointments/${id}`),
+};
+
+// ==================== PUBLIC APPOINTMENT API ====================
+export const publicAppointmentAPI = {
+  createTestDrive: (data) => publicApi.post('/appointments/test-drive', data),
+  createDelivery: (data) => publicApi.post('/appointments/delivery', data),
+  getAppointment: (id) => publicApi.get(`/appointments/${id}`),
+};
+
+// ==================== VEHICLE DELIVERY API ====================
+export const vehicleDeliveryAPI = {
+  getDeliveries: () => api.get('/vehicle-deliveries'),
+  getDelivery: (id) => api.get(`/vehicle-deliveries/${id}`),
+  getDeliveriesByOrder: (orderId) => api.get(`/vehicle-deliveries/order/${orderId}`),
+  getDeliveriesByDealerOrder: (dealerOrderId) => api.get(`/vehicle-deliveries/dealer-order/${dealerOrderId}`),
+  getDeliveriesByStatus: (status) => api.get(`/vehicle-deliveries/status/${status}`),
+  createDelivery: (data) => api.post('/vehicle-deliveries', data),
+  createDeliveryForDealerOrder: (dealerOrderId, data) => api.post(`/vehicle-deliveries/dealer-order/${dealerOrderId}`, data),
+  updateDelivery: (id, data) => api.put(`/vehicle-deliveries/${id}`, data),
+  updateStatus: (id, status) => api.put(`/vehicle-deliveries/${id}/status`, { status }),
+  confirmDelivery: (id) => api.put(`/vehicle-deliveries/${id}/confirm`),
+  dealerConfirmDelivery: (id) => api.put(`/vehicle-deliveries/${id}/dealer-confirm`),
+  cancelDelivery: (id) => api.put(`/vehicle-deliveries/${id}/cancel`),
+  deleteDelivery: (id) => api.delete(`/vehicle-deliveries/${id}`),
+};
 
 // ==================== EXPORT DEFAULT ====================
 export default api;

@@ -1,7 +1,7 @@
 import "./Customer.css";
-import { FaSearch, FaEye, FaPen, FaTrash, FaPlus } from "react-icons/fa";
+import { FaSearch, FaEye, FaPen, FaTrash, FaPlus, FaSpinner, FaExclamationCircle, FaTimesCircle } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import { customerAPI } from "../../services/API"; // ✅ API riêng
+import { customerAPI } from "../../services/API";
 
 export default function Customer() {
   const [customers, setCustomers] = useState([]);
@@ -11,6 +11,10 @@ export default function Customer() {
   const [isEdit, setIsEdit] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(null);
 
   // ✅ Form khách hàng (đồng bộ Dashboard)
   const [customerForm, setCustomerForm] = useState({
@@ -31,11 +35,15 @@ export default function Customer() {
   // 📦 Lấy danh sách khách hàng
   const fetchCustomers = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const res = await customerAPI.getCustomers();
-      setCustomers(res.data);
+      setCustomers(res.data || []);
     } catch (err) {
       console.error("❌ Lỗi khi lấy danh sách khách hàng:", err);
-      alert("Không thể tải danh sách khách hàng!");
+      setError("Không thể tải danh sách khách hàng. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,12 +124,14 @@ export default function Customer() {
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc muốn xóa khách hàng này?")) return;
     try {
+      setDeleting(id);
       await customerAPI.deleteCustomer(id);
-      alert("Xóa khách hàng thành công!");
-      fetchCustomers();
+      await fetchCustomers();
     } catch (err) {
       console.error("❌ Lỗi khi xóa khách hàng:", err);
-      alert("Không thể xóa khách hàng!");
+      alert("Không thể xóa khách hàng! " + (err.response?.data?.error || err.message));
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -160,18 +170,19 @@ export default function Customer() {
     };
 
     try {
+      setSubmitting(true);
       if (isEdit && selectedCustomer) {
         await customerAPI.updateCustomer(selectedCustomer.customerId, payload);
-        alert("Cập nhật khách hàng thành công!");
       } else {
         await customerAPI.createCustomer(payload);
-        alert("Thêm khách hàng thành công!");
       }
       setShowPopup(false);
-      fetchCustomers();
+      await fetchCustomers();
     } catch (err) {
       console.error("❌ Lỗi khi lưu khách hàng:", err);
-      alert("Không thể lưu khách hàng!");
+      alert("Không thể lưu khách hàng! " + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -183,94 +194,274 @@ export default function Customer() {
 
   return (
     <div className="customer">
-      <div className="title-customer">Quản lý khách hàng</div>
+      <div className="title-customer">
+        <span className="title-icon">👥</span>
+        Quản lý khách hàng
+      </div>
 
       <div className="title2-customer">
-        <h2>Danh sách khách hàng ({customers.length})</h2>
-        <h3 onClick={handleOpenAdd}><FaPlus /> Thêm khách hàng</h3>
+        <div>
+          <h2>Danh sách khách hàng</h2>
+          <p className="subtitle">{customers.length} khách hàng tổng cộng</p>
+        </div>
+        <button className="btn-add" onClick={handleOpenAdd}>
+          <FaPlus className="btn-icon" />
+          Thêm khách hàng
+        </button>
       </div>
 
       <div className="title3-customer">
         <FaSearch className="search-icon" />
         <input
           type="text"
-          placeholder="Tìm kiếm khách hàng..."
+          placeholder="Tìm kiếm theo tên, email, số điện thoại..."
           className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        {searchTerm && (
+          <button 
+            className="search-clear" 
+            onClick={() => setSearchTerm("")}
+            title="Xóa tìm kiếm"
+          >
+            <FaTimesCircle />
+          </button>
+        )}
       </div>
 
-      <div className="customer-table-container">
-        <table className="customer-table">
-          <thead>
-            <tr>
-              <th>HỌ TÊN</th>
-              <th>EMAIL</th>
-              <th>ĐIỆN THOẠI</th>
-              <th>THÀNH PHỐ</th>
-              <th>TỈNH</th>
-              <th>ĐIỂM TÍN DỤNG</th>
-              <th>NGÀY SINH</th>
-              <th>NGÀY TẠO</th>
-              <th>THAO TÁC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customers.length > 0 ? (
-              customers.map((c) => (
-                <tr key={c.customerId}>
-                  <td>{c.firstName} {c.lastName}</td>
-                  <td>{c.email}</td>
-                  <td>{c.phone}</td>
-                  <td>{c.city}</td>
-                  <td>{c.province}</td>
-                  <td>{c.creditScore}</td>
-                  <td>{formatDate(c.dateOfBirth)}</td>
-                  <td>{formatDate(c.createdAt)}</td>
-                  <td className="action-buttons">
-                    <button onClick={() => handleView(c)}><FaEye /></button>
-                    <button onClick={() => handleEdit(c)}><FaPen /></button>
-                    <button onClick={() => handleDelete(c.customerId)}><FaTrash /></button>
-                  </td>
+      {/* Error State */}
+      {error && (
+        <div className="error-banner">
+          <FaExclamationCircle />
+          <span>{error}</span>
+          <button onClick={fetchCustomers}>Thử lại</button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="loading-container">
+          <FaSpinner className="spinner" />
+          <p>Đang tải danh sách khách hàng...</p>
+        </div>
+      ) : (
+        <div className="customer-table-container">
+          {customers.length > 0 ? (
+            <table className="customer-table">
+              <thead>
+                <tr>
+                  <th>HỌ TÊN</th>
+                  <th>EMAIL</th>
+                  <th>ĐIỆN THOẠI</th>
+                  <th>THÀNH PHỐ</th>
+                  <th>TỈNH</th>
+                  <th>ĐIỂM TÍN DỤNG</th>
+                  <th>NGÀY SINH</th>
+                  <th>NGÀY TẠO</th>
+                  <th>THAO TÁC</th>
                 </tr>
-              ))
-            ) : (
-              <tr><td colSpan="9">Không có dữ liệu</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {customers.map((c) => (
+                  <tr key={c.customerId} className="table-row">
+                    <td>
+                      <span className="customer-name">{c.firstName} {c.lastName}</span>
+                    </td>
+                    <td>{c.email || '—'}</td>
+                    <td>{c.phone || '—'}</td>
+                    <td>{c.city || '—'}</td>
+                    <td>{c.province || '—'}</td>
+                    <td>
+                      <span className="credit-score">{c.creditScore || 0}</span>
+                    </td>
+                    <td>{formatDate(c.dateOfBirth)}</td>
+                    <td>{formatDate(c.createdAt)}</td>
+                    <td className="action-buttons">
+                      <button 
+                        className="icon-btn view" 
+                        onClick={() => handleView(c)}
+                        title="Xem chi tiết"
+                      >
+                        <FaEye />
+                      </button>
+                      <button 
+                        className="icon-btn edit" 
+                        onClick={() => handleEdit(c)}
+                        title="Chỉnh sửa"
+                      >
+                        <FaPen />
+                      </button>
+                      <button 
+                        className="icon-btn delete" 
+                        onClick={() => handleDelete(c.customerId)}
+                        disabled={deleting === c.customerId}
+                        title="Xóa khách hàng"
+                      >
+                        {deleting === c.customerId ? <FaSpinner className="spinner-small" /> : <FaTrash />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">👤</div>
+              <h3>{searchTerm ? 'Không tìm thấy khách hàng' : 'Chưa có khách hàng nào'}</h3>
+              <p>
+                {searchTerm 
+                  ? 'Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc' 
+                  : 'Bắt đầu bằng cách thêm khách hàng mới'}
+              </p>
+              {!searchTerm && (
+                <button className="btn-primary" onClick={handleOpenAdd}>
+                  Thêm khách hàng đầu tiên
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Popup thêm/sửa khách hàng */}
       {showPopup && (
-        <div className="popup-overlay">
-          <div className="popup-box">
-            <h2>{isEdit ? "Sửa khách hàng" : "Thêm khách hàng"}</h2>
+        <div className="popup-overlay" onClick={() => setShowPopup(false)}>
+          <div className="popup-box popup-form" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-header">
+              <h2>{isEdit ? "Sửa khách hàng" : "Thêm khách hàng"}</h2>
+              <button className="popup-close" onClick={() => setShowPopup(false)}>
+                <FaTimesCircle />
+              </button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-grid">
-                <input name="firstName" placeholder="Họ" value={customerForm.firstName} onChange={handleChange} />
-                <input name="lastName" placeholder="Tên" value={customerForm.lastName} onChange={handleChange} />
-                <input type="email" name="email" placeholder="Email" value={customerForm.email} onChange={handleChange} />
-                <input name="phone" placeholder="Số điện thoại" value={customerForm.phone} onChange={handleChange} />
-                <input type="date" name="dateOfBirth" value={customerForm.dateOfBirth} onChange={handleChange} />
-                <input name="address" placeholder="Địa chỉ" value={customerForm.address} onChange={handleChange} />
-                <input name="city" placeholder="Thành phố" value={customerForm.city} onChange={handleChange} />
-                <input name="province" placeholder="Tỉnh" value={customerForm.province} onChange={handleChange} />
-                <input name="postalCode" placeholder="Mã bưu điện" value={customerForm.postalCode} onChange={handleChange} />
-                <select name="preferredContactMethod" value={customerForm.preferredContactMethod} onChange={handleChange}>
-                  <option value="">-- Liên hệ qua --</option>
-                  <option value="email">Email</option>
-                  <option value="sms">SMS</option>
-                  <option value="phone">Điện thoại</option>
-                </select>
-                <input type="number" name="creditScore" placeholder="Điểm tín dụng" value={customerForm.creditScore} onChange={handleChange} />
-                <textarea name="notes" placeholder="Ghi chú" value={customerForm.notes} onChange={handleChange}></textarea>
+                <div className="form-group">
+                  <input 
+                    name="firstName" 
+                    placeholder="Họ *" 
+                    value={customerForm.firstName} 
+                    onChange={handleChange}
+                    className={errors.firstName ? 'error' : ''}
+                  />
+                  {errors.firstName && <span className="error-text">{errors.firstName}</span>}
+                </div>
+                <div className="form-group">
+                  <input 
+                    name="lastName" 
+                    placeholder="Tên *" 
+                    value={customerForm.lastName} 
+                    onChange={handleChange}
+                    className={errors.lastName ? 'error' : ''}
+                  />
+                  {errors.lastName && <span className="error-text">{errors.lastName}</span>}
+                </div>
+                <div className="form-group">
+                  <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Email *" 
+                    value={customerForm.email} 
+                    onChange={handleChange}
+                    className={errors.email ? 'error' : ''}
+                  />
+                  {errors.email && <span className="error-text">{errors.email}</span>}
+                </div>
+                <div className="form-group">
+                  <input 
+                    name="phone" 
+                    placeholder="Số điện thoại *" 
+                    value={customerForm.phone} 
+                    onChange={handleChange}
+                    className={errors.phone ? 'error' : ''}
+                  />
+                  {errors.phone && <span className="error-text">{errors.phone}</span>}
+                </div>
+                <div className="form-group">
+                  <input 
+                    type="date" 
+                    name="dateOfBirth" 
+                    placeholder="Ngày sinh" 
+                    value={customerForm.dateOfBirth} 
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <input 
+                    name="address" 
+                    placeholder="Địa chỉ" 
+                    value={customerForm.address} 
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <input 
+                    name="city" 
+                    placeholder="Thành phố" 
+                    value={customerForm.city} 
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <input 
+                    name="province" 
+                    placeholder="Tỉnh" 
+                    value={customerForm.province} 
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <input 
+                    name="postalCode" 
+                    placeholder="Mã bưu điện" 
+                    value={customerForm.postalCode} 
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <select name="preferredContactMethod" value={customerForm.preferredContactMethod} onChange={handleChange}>
+                    <option value="">-- Liên hệ qua --</option>
+                    <option value="email">Email</option>
+                    <option value="sms">SMS</option>
+                    <option value="phone">Điện thoại</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <input 
+                    type="number" 
+                    name="creditScore" 
+                    placeholder="Điểm tín dụng" 
+                    value={customerForm.creditScore} 
+                    onChange={handleChange}
+                    min="0"
+                    max="850"
+                  />
+                </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <textarea 
+                    name="notes" 
+                    placeholder="Ghi chú" 
+                    value={customerForm.notes} 
+                    onChange={handleChange}
+                    rows="3"
+                  ></textarea>
+                </div>
               </div>
 
               <div className="form-actions">
-                <button type="submit">{isEdit ? "Cập nhật" : "Tạo mới"}</button>
-                <button type="button" onClick={() => setShowPopup(false)}>Hủy</button>
+                <button type="submit" disabled={submitting} className="btn-submit">
+                  {submitting ? (
+                    <>
+                      <FaSpinner className="spinner-small" />
+                      Đang lưu...
+                    </>
+                  ) : (
+                    isEdit ? "Cập nhật" : "Tạo mới"
+                  )}
+                </button>
+                <button type="button" onClick={() => setShowPopup(false)} className="btn-cancel" disabled={submitting}>
+                  Hủy
+                </button>
               </div>
             </form>
           </div>
@@ -279,20 +470,88 @@ export default function Customer() {
 
       {/* Popup xem chi tiết */}
       {showDetail && selectedCustomer && (
-        <div className="popup-overlay">
-          <div className="popup-box">
-            <h2>Chi tiết khách hàng</h2>
-            <p><b>Họ tên:</b> {selectedCustomer.firstName} {selectedCustomer.lastName}</p>
-            <p><b>Email:</b> {selectedCustomer.email}</p>
-            <p><b>Điện thoại:</b> {selectedCustomer.phone}</p>
-            <p><b>Ngày sinh:</b> {formatDate(selectedCustomer.dateOfBirth)}</p>
-            <p><b>Địa chỉ:</b> {selectedCustomer.address}</p>
-            <p><b>Thành phố:</b> {selectedCustomer.city}</p>
-            <p><b>Tỉnh:</b> {selectedCustomer.province}</p>
-            <p><b>Điểm tín dụng:</b> {selectedCustomer.creditScore}</p>
-            <p><b>Liên hệ qua:</b> {selectedCustomer.preferredContactMethod}</p>
-            <p><b>Ghi chú:</b> {selectedCustomer.notes}</p>
-            <button onClick={() => setShowDetail(false)}>Đóng</button>
+        <div className="popup-overlay" onClick={() => setShowDetail(false)}>
+          <div className="popup-box detail-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-header">
+              <h2>Chi tiết khách hàng</h2>
+              <button className="popup-close" onClick={() => setShowDetail(false)}>
+                <FaTimesCircle />
+              </button>
+            </div>
+            <div className="popup-content">
+              <div className="detail-section">
+                <h3>Thông tin cá nhân</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">Họ tên</span>
+                    <span className="detail-value">
+                      {selectedCustomer.firstName} {selectedCustomer.lastName}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Email</span>
+                    <span className="detail-value">{selectedCustomer.email || '—'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Điện thoại</span>
+                    <span className="detail-value">{selectedCustomer.phone || '—'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Ngày sinh</span>
+                    <span className="detail-value">{formatDate(selectedCustomer.dateOfBirth)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3>Địa chỉ</h3>
+                <div className="detail-grid">
+                  <div className="detail-item full-width">
+                    <span className="detail-label">Địa chỉ</span>
+                    <span className="detail-value">{selectedCustomer.address || '—'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Thành phố</span>
+                    <span className="detail-value">{selectedCustomer.city || '—'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Tỉnh</span>
+                    <span className="detail-value">{selectedCustomer.province || '—'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Mã bưu điện</span>
+                    <span className="detail-value">{selectedCustomer.postalCode || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3>Thông tin khác</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">Điểm tín dụng</span>
+                    <span className="detail-value credit-score">
+                      {selectedCustomer.creditScore || 0}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Liên hệ qua</span>
+                    <span className="detail-value">{selectedCustomer.preferredContactMethod || '—'}</span>
+                  </div>
+                  {selectedCustomer.notes && (
+                    <div className="detail-item full-width">
+                      <span className="detail-label">Ghi chú</span>
+                      <span className="detail-value">{selectedCustomer.notes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="popup-footer">
+              <button className="btn-primary" onClick={() => setShowDetail(false)}>
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
